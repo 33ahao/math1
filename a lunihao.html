@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小智的灵动毛玻璃视窗</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        /* 页面背景：提取自第二张图的柔和青蓝、湖绿与紫粉渐变 */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(145deg, #c5f4ec 0%, #d6ebfd 35%, #e1e6fc 70%, #fae6f4 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 背景流光环境球（增强毛玻璃透光质感） */
+        .ambient-glow-1 {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(162, 237, 222, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+            top: 5%;
+            left: 15%;
+            filter: blur(50px);
+            z-index: 0;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            background: radial-gradient(circle, rgba(205, 193, 255, 0.75) 0%, rgba(255, 255, 255, 0) 70%);
+            bottom: 5%;
+            right: 15%;
+            filter: blur(60px);
+            z-index: 0;
+        }
+
+        /* 顶栏弹性胶囊菜单 */
+        .nav-container {
+            position: relative;
+            z-index: 10;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 5px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(71, 114, 153, 0.08);
+            display: flex;
+        }
+
+        .nav-capsule {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            height: calc(100% - 10px);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 999px;
+            /* 细高光边缘 */
+            box-shadow: 
+                inset 0 1px 1px 0.5px rgba(255, 255, 255, 0.9),
+                inset 0 -1px 1px 0.5px rgba(255, 255, 255, 0.4),
+                0 4px 12px rgba(60, 100, 140, 0.08);
+            border: 0.5px solid rgba(255, 255, 255, 0.9);
+            pointer-events: none;
+            /* 弹性位移过渡动画 */
+            transition: transform 0.48s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        width 0.48s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+        }
+
+        .nav-item {
+            position: relative;
+            z-index: 2;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a6375;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: #1a3347;
+            font-weight: 600;
+        }
+
+        /* 3D 悬浮卡片包装层 */
+        .card-perspective-wrapper {
+            perspective: 1200px;
+            z-index: 10;
+        }
+
+        /* 主磨砂玻璃卡片 */
+        .glass-card {
+            width: 360px;
+            height: 480px;
+            background: rgba(255, 255, 255, 0.42);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 28px;
+            padding: 18px 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 
+                0 25px 50px -12px rgba(71, 105, 134, 0.18),
+                0 0 0 1px rgba(255, 255, 255, 0.5);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), box-shadow 0.3s ease;
+            cursor: default;
+        }
+
+        /* 边框随鼠标靠近局部提亮层 */
+        .card-border-glow {
+            position: absolute;
+            inset: -1px;
+            border-radius: 29px;
+            padding: 1.5px;
+            background: radial-gradient(
+                160px circle at var(--mouse-x, -200px) var(--mouse-y, -200px),
+                rgba(255, 255, 255, 0.95),
+                rgba(255, 255, 255, 0.2) 60%,
+                transparent 100%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .glass-card:hover .card-border-glow {
+            opacity: 1;
+        }
+
+        /* 卡片内部柔和径向跟随光斑 */
+        .card-spotlight {
+            position: absolute;
+            inset: 0;
+            border-radius: 28px;
+            background: radial-gradient(
+                220px circle at var(--mouse-x, -200px) var(--mouse-y, -200px),
+                rgba(255, 255, 255, 0.55),
+                transparent 70%
+            );
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .glass-card:hover .card-spotlight {
+            opacity: 1;
+        }
+
+        /* 顶部窗口模拟控制点（如第1张图所示） */
+        .window-header {
+            display: flex;
+            align-items: center;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+            margin-bottom: 30px;
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 7px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(140, 165, 185, 0.45);
+        }
+
+        /* 卡片中间：显示文字的毛玻璃框 */
+        .text-display-box {
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.35);
+            border: 1.5px solid rgba(175, 225, 215, 0.7);
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.5);
+            padding: 10px;
+            margin-bottom: auto;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.4s ease;
+        }
+
+        /* 楷体渐变文字 */
+        .kaiti-text {
+            font-family: "KaiTi", "STKaiti", "楷体", "BiauKai", serif;
+            font-size: 38px;
+            font-weight: 700;
+            text-align: center;
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+            text-shadow: 0 4px 15px rgba(100, 140, 180, 0.1);
+        }
+
+        /* 操作按钮组 */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        /* 按钮通用磨砂质感 */
+        .action-btn {
+            width: 100%;
+            padding: 13px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #2c4456;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(90, 130, 160, 0.08);
+            transition: all 0.25s ease;
+            outline: none;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(90, 130, 160, 0.12);
+        }
+
+        .action-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* 次级详情按钮 */
+        .detail-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            padding: 9px;
+            color: #557287;
+        }
+
+        /* 原位放大详情视图（Shared Element 动效层） */
+        .expandable-modal {
+            position: fixed;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(36px);
+            -webkit-backdrop-filter: blur(36px);
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 30px 70px rgba(50, 85, 115, 0.25);
+            border-radius: 14px;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .expandable-modal.expanded {
+            opacity: 1;
+            pointer-events: auto;
+            border-radius: 28px;
+        }
+
+        .modal-content {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.15s;
+        }
+
+        .expandable-modal.expanded .modal-content {
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            color: #213a4d;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #577387;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-body {
+            color: #4b667a;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 背景漫射氛围 -->
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <!-- 顶部胶囊菜单导航 -->
+    <nav class="nav-container" id="menu">
+        <div class="nav-capsule" id="capsule"></div>
+        <button class="nav-item active" onclick="switchTab(this, 0)">灵动视窗</button>
+        <button class="nav-item" onclick="switchTab(this, 1)">阿陆心语</button>
+        <button class="nav-item" onclick="switchTab(this, 2)">设计灵感</button>
+    </nav>
+
+    <!-- 3D 卡片区域 -->
+    <div class="card-perspective-wrapper">
+        <div class="glass-card" id="card">
+            <!-- 边框跟随高光 & 内部径向光斑 -->
+            <div class="card-border-glow"></div>
+            <div class="card-spotlight"></div>
+
+            <!-- 模拟视窗顶栏小圆点 -->
+            <div class="window-header">
+                <div class="window-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <!-- 中间文字框 -->
+            <div class="text-display-box" id="textBox">
+                <div class="kaiti-text" id="kaitiText">你好</div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="btn-group">
+                <button class="action-btn" id="changeBtn">换一句</button>
+                <button class="action-btn detail-btn" id="detailBtn">查看详情视图</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 原位放大详情视图模态框 -->
+    <div class="expandable-modal" id="expandableModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">语句详情</h3>
+                <button class="close-btn" id="closeModalBtn">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="detailQuote" style="font-family: 'KaiTi','楷体',serif; font-size: 22px; font-weight: bold; margin-bottom: 12px; color: #1c3d52;"></p>
+                <p>这是一段原位展开的详情信息视图。点击关闭按钮后，此视图将按原路径平滑收缩归位到发起点击的按钮位置。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ================= 1. 文字切换与随机渐变 ================= */
+        const textList = ["你好", "阿陆你好", "阿陆肯定很好"];
+        let textIndex = 0;
+        const kaitiText = document.getElementById("kaitiText");
+        const textBox = document.getElementById("textBox");
+        const changeBtn = document.getElementById("changeBtn");
+
+        // 生成高质感随机渐变色
+        function getRandomGradient() {
+            const h1 = Math.floor(Math.random() * 360);
+            const h2 = (h1 + 45 + Math.floor(Math.random() * 60)) % 360;
+            const angle = Math.floor(Math.random() * 360);
+            return `linear-gradient(${angle}deg, hsl(${h1}, 75%, 52%), hsl(${h2}, 85%, 60%))`;
+        }
+
+        function applyTextGradient() {
+            const grad = getRandomGradient();
+            kaitiText.style.backgroundImage = grad;
+            // 边框也同步呼应淡淡的色彩
+            textBox.style.borderColor = `hsla(${Math.floor(Math.random() * 360)}, 70%, 75%, 0.7)`;
+        }
+
+        // 初始化渐变颜色
+        applyTextGradient();
+
+        changeBtn.addEventListener("click", () => {
+            // 文字切换微动效
+            kaitiText.style.transform = "scale(0.85)";
+            kaitiText.style.opacity = "0";
+
+            setTimeout(() => {
+                textIndex = (textIndex + 1) % textList.length;
+                kaitiText.textContent = textList[textIndex];
+                applyTextGradient();
+                kaitiText.style.transform = "scale(1)";
+                kaitiText.style.opacity = "1";
+            }, 180);
+        });
+
+
+        /* ================= 2. 菜单项半透明胶囊弹性滑动 ================= */
+        const capsule = document.getElementById("capsule");
+        const menuItems = document.querySelectorAll(".nav-item");
+        let currentMenuIndex = 0;
+
+        function updateCapsule(target, stretchDirection = 0) {
+            const menuRect = document.getElementById("menu").getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            
+            const leftOffset = targetRect.left - menuRect.left;
+            const targetWidth = targetRect.width;
+
+            // 移动中沿方向拉长拉伸效果
+            if (stretchDirection !== 0) {
+                const stretchWidth = targetWidth * 1.35;
+                capsule.style.width = `${stretchWidth}px`;
+                // 根据向左或向右调整微量偏移以形成前突感
+                const offsetShift = stretchDirection > 0 ? 0 : -(stretchWidth - targetWidth);
+                capsule.style.transform = `translateX(${leftOffset + offsetShift}px)`;
+
+                // 稍微延后回弹到原始尺寸，产生弹性果冻感
+                setTimeout(() => {
+                    capsule.style.width = `${targetWidth}px`;
+                    capsule.style.transform = `translateX(${leftOffset}px)`;
+                }, 160);
+            } else {
+                capsule.style.width = `${targetWidth}px`;
+                capsule.style.transform = `translateX(${leftOffset}px)`;
+            }
+        }
+
+        // 初始化胶囊位置
+        updateCapsule(menuItems[0]);
+
+        function switchTab(btn, index) {
+            if (index === currentMenuIndex) return;
+            const direction = index > currentMenuIndex ? 1 : -1;
+            menuItems.forEach(item => item.classList.remove("active"));
+            btn.classList.add("active");
+            updateCapsule(btn, direction);
+            currentMenuIndex = index;
+        }
+
+
+        /* ================= 3. 卡片 3D 倾斜（≤4度）与光标跟随光斑 ================= */
+        const card = document.getElementById("card");
+        const MAX_TILT = 4; // 最大倾斜角度严格限制不超过4度
+
+        card.addEventListener("mousemove", (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // 设置径向光斑与高光边框坐标
+            card.style.setProperty("--mouse-x", `${x}px`);
+            card.style.setProperty("--mouse-y", `${y}px`);
+
+            // 计算倾斜角度
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = -((y - centerY) / centerY) * MAX_TILT;
+            const rotateY = ((x - centerX) / centerX) * MAX_TILT;
+
+            card.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+        });
+
+        card.addEventListener("mouseleave", () => {
+            // 平滑复原
+            card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+
+
+        /* ================= 4. 原位放大为详情视图，原路收回 ================= */
+        const detailBtn = document.getElementById("detailBtn");
+        const modal = document.getElementById("expandableModal");
+        const closeModalBtn = document.getElementById("closeModalBtn");
+        const detailQuote = document.getElementById("detailQuote");
+        let originRect = null;
+
+        detailBtn.addEventListener("click", () => {
+            originRect = detailBtn.getBoundingClientRect();
+            detailQuote.textContent = `“ ${textList[textIndex]} ”`;
+
+            // 第一阶段：将模态视图定位在按钮当前绝对位置
+            modal.style.transition = "none";
+            modal.style.top = `${originRect.top}px`;
+            modal.style.left = `${originRect.left}px`;
+            modal.style.width = `${originRect.width}px`;
+            modal.style.height = `${originRect.height}px`;
+            modal.style.borderRadius = "14px";
+            modal.style.opacity = "0.7";
+
+            // 强制重绘，使过渡动画生效
+            modal.offsetHeight;
+
+            // 第二阶段：平滑放大到屏幕中央详情视图
+            const targetWidth = Math.min(window.innerWidth * 0.88, 420);
+            const targetHeight = 280;
+            const targetLeft = (window.innerWidth - targetWidth) / 2;
+            const targetTop = (window.innerHeight - targetHeight) / 2;
+
+            modal.style.transition = "all 0.48s cubic-bezier(0.16, 1, 0.3, 1)";
+            modal.style.top = `${targetTop}px`;
+            modal.style.left = `${targetLeft}px`;
+            modal.style.width = `${targetWidth}px`;
+            modal.style.height = `${targetHeight}px`;
+            modal.classList.add("expanded");
+        });
+
+        // 原路收回
+        closeModalBtn.addEventListener("click", () => {
+            if (!originRect) return;
+
+            modal.classList.remove("expanded");
+            modal.style.transition = "all 0.4s cubic-bezier(0.25, 1, 0.5, 1)";
+            modal.style.top = `${originRect.top}px`;
+            modal.style.left = `${originRect.left}px`;
+            modal.style.width = `${originRect.width}px`;
+            modal.style.height = `${originRect.height}px`;
+            modal.style.borderRadius = "14px";
+            modal.style.opacity = "0";
+        });
+    </script>
+</body>
+</html>

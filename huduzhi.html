@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>高中数学 - 任意角、终边相同角与弧度制可视化交互空间</title>
+  
+  <!-- 引入 KaTeX 用于渲染专业数学公式与集合符号 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "KaiTi", "楷体", "STKaiti", "Baskerville", serif;
+      background: linear-gradient(135deg, #c2f3ed 0%, #d8edfe 38%, #e4e7fc 70%, #edf7ff 100%);
+      color: #2c3e50;
+      overflow-x: hidden;
+      position: relative;
+      padding-bottom: 90px;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(85px);
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+    .glow-1 {
+      width: 480px;
+      height: 480px;
+      top: -120px;
+      right: -80px;
+      background: radial-gradient(circle, rgba(162, 222, 255, 0.75), rgba(218, 208, 255, 0.35));
+    }
+    .glow-2 {
+      width: 520px;
+      height: 520px;
+      bottom: -160px;
+      left: -120px;
+      background: radial-gradient(circle, rgba(170, 245, 230, 0.75), rgba(188, 224, 255, 0.4));
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    header h1 {
+      font-size: 2.35rem;
+      letter-spacing: 2px;
+      color: #1a385c;
+      text-shadow: 0 2px 12px rgba(255, 255, 255, 0.9);
+      font-weight: bold;
+    }
+    header p {
+      margin-top: 6px;
+      font-size: 1.1rem;
+      color: #527292;
+    }
+
+    .nav-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 35px;
+    }
+    .nav-bar {
+      position: relative;
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.48);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      padding: 6px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 25px rgba(110, 160, 190, 0.12),
+                  inset 0 1px 2px rgba(255, 255, 255, 0.9);
+    }
+    .nav-btn {
+      position: relative;
+      z-index: 2;
+      border: none;
+      background: transparent;
+      padding: 10px 22px;
+      font-family: inherit;
+      font-size: 1.12rem;
+      font-weight: 600;
+      color: #486581;
+      cursor: pointer;
+      outline: none;
+      transition: color 0.3s ease;
+    }
+    .nav-btn.active {
+      color: #0b4f6c;
+    }
+
+    .nav-capsule {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      height: calc(100% - 12px);
+      background: rgba(255, 255, 255, 0.88);
+      border-radius: 30px;
+      z-index: 1;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 16px rgba(100, 165, 205, 0.22),
+                  inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
+                  inset 0 -1.5px 2px rgba(180, 220, 240, 0.3);
+      transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  width 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center center;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 28px;
+    }
+
+    .glass-card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.58);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border-radius: 26px;
+      border: 1.2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 16px 36px rgba(120, 165, 190, 0.12),
+                  inset 0 1.5px 2px rgba(255, 255, 255, 0.95);
+      padding: 24px;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+                  box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .glass-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 22px 42px rgba(100, 150, 180, 0.18),
+                  inset 0 1.5px 2px rgba(255, 255, 255, 1);
+    }
+
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(
+        circle 180px at var(--mouse-x, -999px) var(--mouse-y, -999px),
+        rgba(255, 255, 255, 0.72),
+        rgba(255, 255, 255, 0) 75%
+      );
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(94, 186, 172, 0.2);
+      border: 1px solid rgba(94, 186, 172, 0.4);
+      color: #12685c;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      align-self: flex-start;
+    }
+    .card-title {
+      font-size: 1.45rem;
+      color: #1a385c;
+      margin-bottom: 10px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title .zoom-icon {
+      font-size: 1.15rem;
+      color: #5f87a3;
+      transition: transform 0.3s;
+    }
+    .glass-card:hover .zoom-icon {
+      transform: scale(1.15) translateX(3px);
+      color: #0b4f6c;
+    }
+    .card-desc {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #486581;
+      margin-bottom: 12px;
+    }
+
+    .card-preview-box {
+      background: rgba(255, 255, 255, 0.52);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: auto;
+      height: 200px;
+      position: relative;
+    }
+    .card-preview-box canvas {
+      width: 100%;
+      height: 160px;
+    }
+    .canvas-tip {
+      font-size: 0.82rem;
+      color: #7b9bb6;
+      margin-top: 4px;
+    }
+
+    /* 原位放大详情视图模态框（支持近乎全屏与满屏切换） */
+    .detail-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(175, 205, 222, 0.38);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .detail-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-modal {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(35px);
+      -webkit-backdrop-filter: blur(35px);
+      border-radius: 28px;
+      border: 1.5px solid rgba(255, 255, 255, 0.98);
+      box-shadow: 0 30px 60px rgba(60, 105, 135, 0.22),
+                  inset 0 1.5px 2px rgba(255, 255, 255, 1);
+      padding: 24px 28px;
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 满屏沉浸模式 class */
+    .detail-modal.fullscreen-mode {
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      padding: 18px 24px !important;
+    }
+
+    /* 右上角操作按键组合 */
+    .modal-actions {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .action-circle-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(190, 215, 230, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.25rem;
+      color: #486581;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+    .action-circle-btn:hover {
+      background: #ffffff;
+      color: #0b4f6c;
+      transform: scale(1.08);
+    }
+    .action-circle-btn.close-btn:hover {
+      color: #e53935;
+    }
+
+    .modal-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      font-size: 1.12rem;
+      line-height: 1.7;
+      color: #334e68;
+    }
+    .modal-body h2 {
+      color: #102a43;
+      margin-bottom: 8px;
+      font-size: 1.6rem;
+    }
+
+    /* 全屏铺满自适应画布容器 */
+    .canvas-fullscreen-container {
+      flex: 1;
+      width: 100%;
+      min-height: 380px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.55);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .canvas-fullscreen-container canvas {
+      display: block;
+      cursor: grab;
+    }
+    .canvas-fullscreen-container canvas:active {
+      cursor: grabbing;
+    }
+
+    .blank-fill {
+      border-bottom: 1.8px solid #0b4f6c;
+      color: #0b4f6c;
+      font-weight: bold;
+      padding: 0 8px;
+      display: inline-block;
+    }
+
+    .interactive-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 16px;
+      padding: 10px 16px;
+      margin: 10px 0;
+      border: 1px solid rgba(255, 255, 255, 0.95);
+    }
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ctrl-group label {
+      font-size: 1.05rem;
+      color: #1e3a5f;
+      font-weight: bold;
+    }
+    input[type=range] {
+      accent-color: #0b4f6c;
+      cursor: pointer;
+    }
+
+    .k-spin-btn {
+      background: #0b4f6c;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.15rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(11, 79, 108, 0.28);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .k-spin-btn:active {
+      transform: scale(0.88);
+    }
+    .k-spin-btn:hover {
+      background: #11739c;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(180, 215, 235, 0.8);
+      padding: 5px 13px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: #1e3a5f;
+      transition: all 0.2s;
+    }
+    .pill-btn:hover {
+      background: #0b4f6c;
+      color: #fff;
+    }
+    .pill-btn.active {
+      background: #0b4f6c;
+      color: #fff;
+    }
+
+    .pen-fab {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(215, 240, 255, 0.85));
+      border: 1.5px solid #ffffff;
+      box-shadow: 0 10px 28px rgba(70, 130, 160, 0.28),
+                  inset 0 1.5px 2px #ffffff;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 200;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pen-fab:hover {
+      transform: scale(1.1);
+    }
+    .pen-fab svg {
+      width: 28px;
+      height: 28px;
+      fill: #0b4f6c;
+    }
+    .pen-fab span {
+      font-size: 0.68rem;
+      color: #0b4f6c;
+      font-weight: bold;
+      margin-top: 1px;
+    }
+
+    .drawing-toolbar {
+      position: fixed;
+      bottom: 105px;
+      right: 28px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1.2px solid rgba(255, 255, 255, 0.95);
+      border-radius: 36px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 18px 40px rgba(50, 100, 130, 0.2),
+                  inset 0 1.5px 2px #fff;
+      z-index: 201;
+      transform: scale(0);
+      transform-origin: bottom right;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  opacity 0.28s ease;
+    }
+    .drawing-toolbar.open {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .tool-btn {
+      border: none;
+      background: rgba(230, 243, 250, 0.5);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-family: inherit;
+      font-size: 1rem;
+      color: #334e68;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+    .tool-btn.active {
+      background: #0b4f6c;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(11, 79, 108, 0.3);
+    }
+
+    #drawingCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 150;
+      pointer-events: none;
+      touch-action: none;
+    }
+    #drawingCanvas.drawing-active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- 全屏手写批注画布（支持 Apple Pencil 压感） -->
+  <canvas id="drawingCanvas"></canvas>
+
+  <div class="container">
+    <header>
+      <h1>高中数学 · 任意角、终边相同角与弧度制</h1>
+      <p>圆心角 ↔ 弧长纯净 $\pi$ 对照 · 单位圆 $r=1$ · 全屏铺满沉浸体验</p>
+    </header>
+
+    <!-- 顶部弹性胶囊导航栏 -->
+    <div class="nav-wrapper">
+      <div class="nav-bar" id="navBar">
+        <div class="nav-capsule" id="capsule"></div>
+        <button class="nav-btn active" data-filter="all">全部内容</button>
+        <button class="nav-btn" data-filter="p1">任意角的旋转定义</button>
+        <button class="nav-btn" data-filter="p2">终边相同的角与周数</button>
+        <button class="nav-btn" data-filter="p3">知识点三：弧度制</button>
+        <button class="nav-btn" data-filter="p4">象限角与轴线角判别</button>
+      </div>
+    </div>
+
+    <!-- 卡片网格 -->
+    <div class="card-grid" id="cardGrid">
+
+      <!-- 卡片 1 -->
+      <div class="glass-card" data-category="p1" data-id="1">
+        <div class="card-content">
+          <span class="badge">知识点一 · 01</span>
+          <div class="card-title">
+            旋转方向：正角与负角
+            <span class="zoom-icon">⤢ 全屏铺满交互</span>
+          </div>
+          <p class="card-desc">逆时针旋转为<strong>正角</strong>，顺时针旋转为<strong>负角</strong>，未作旋转为<strong>零角</strong>。大小突破 $360^\circ$ 局限。</p>
+          <div class="card-preview-box">
+            <canvas id="previewCanvas1"></canvas>
+            <div class="canvas-tip">点击卡片全屏铺满交互旋转</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片 2 -->
+      <div class="glass-card" data-category="p1" data-id="2">
+        <div class="card-content">
+          <span class="badge">知识点一 · 02</span>
+          <div class="card-title">
+            直角坐标系与终边位置
+            <span class="zoom-icon">⤢ 全屏铺满交互</span>
+          </div>
+          <p class="card-desc">始边固定在 $x$ 轴正半轴，射线旋转停止时的射线叫<strong>终边</strong>。终边位置直接决定三角函数符号。</p>
+          <div class="card-preview-box">
+            <canvas id="previewCanvas2"></canvas>
+            <div class="canvas-tip">点击卡片全屏铺满，拖动终边查看角度</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片 3 -->
+      <div class="glass-card" data-category="p2" data-id="3">
+        <div class="card-content">
+          <span class="badge">知识点二 · 01</span>
+          <div class="card-title">
+            终边相同角与 $k$ 旋转
+            <span class="zoom-icon">⤢ 全屏铺满交互</span>
+          </div>
+          <p class="card-desc">与 $\alpha$ 终边相同的角集合：$\{\beta \mid \beta = \alpha + k \cdot 360^\circ, k \in \mathbf{Z}\}$。终边相同不一定相等。</p>
+          <div class="card-preview-box">
+            <canvas id="previewCanvas3"></canvas>
+            <div class="canvas-tip">点击全屏体验：点击 k 激发直线整圈平滑旋转！</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片 4：知识点三 弧度制 -->
+      <div class="glass-card" data-category="p3" data-id="5">
+        <div class="card-content">
+          <span class="badge">知识点三 · 01</span>
+          <div class="card-title">
+            圆心角与弧长 $\pi$ 对照
+            <span class="zoom-icon">⤢ 全屏铺满交互</span>
+          </div>
+          <p class="card-desc">单位圆（$r=1$）全屏大圆盘！圆心处清晰显示<strong>度数</strong>，弧长处纯净显示 <strong>$\pi$ 形式</strong>。丝滑平滑转动。</p>
+          <div class="card-preview-box">
+            <canvas id="previewCanvas5"></canvas>
+            <div class="canvas-tip">点击铺满全屏，直观比对角度与弧度</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 卡片 5 -->
+      <div class="glass-card" data-category="p4" data-id="4">
+        <div class="card-content">
+          <span class="badge">知识点二 · 02</span>
+          <div class="card-title">
+            象限角与轴线角探测
+            <span class="zoom-icon">⤢ 全屏铺满交互</span>
+          </div>
+          <p class="card-desc">终边落在第几象限即为第几象限角；落在坐标轴上叫轴线角。第一象限角不一定是锐角。</p>
+          <div class="card-preview-box">
+            <canvas id="previewCanvas4"></canvas>
+            <div class="canvas-tip">转动手柄，区域发光判定象限</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 原位放大详情视图模态框（支持全屏铺满） -->
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-modal" id="detailModal">
+      <div class="modal-actions">
+        <button class="action-circle-btn" id="btnToggleFullscreen" title="铺满全屏 / 还原窗口">⛶</button>
+        <button class="action-circle-btn close-btn" id="closeModalBtn" title="关闭">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- 手写批注悬浮主按钮 -->
+  <div class="pen-fab" id="penFab" title="开启手写板 / Apple Pencil 批注">
+    <svg viewBox="0 0 24 24">
+      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+    </svg>
+    <span>手写批注</span>
+  </div>
+
+  <!-- 手写画笔工具栏 -->
+  <div class="drawing-toolbar" id="drawingToolbar">
+    <button class="tool-btn active" id="btnPen">✏️ 画笔</button>
+    <button class="tool-btn" id="btnEraser">🧹 橡皮</button>
+    <button class="tool-btn" id="btnClear">🗑️ 清屏</button>
+    <button class="tool-btn" id="btnCloseDraw" style="color: #e53935;">✕ 收起</button>
+  </div>
+
+  <script>
+    /* =====================================================================
+       1. Retina 高清视网膜超采样引擎（支持全屏任意缩放）
+       ===================================================================== */
+    function setupSharpCanvas(canvas, logicalWidth, logicalHeight) {
+      const dpr = Math.max(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(logicalWidth * dpr);
+      canvas.height = Math.round(logicalHeight * dpr);
+      canvas.style.width = logicalWidth + 'px';
+      canvas.style.height = logicalHeight + 'px';
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      return { ctx, dpr };
+    }
+
+    /* =====================================================================
+       2. 数学化简引擎：去除约等于，纯净最简 π 分数表达
+       ===================================================================== */
+    function getPiArcLength(deg) {
+      if (Math.abs(deg - 57.29578) < 0.6) {
+        return { piText: "1", fullFormula: "l = 1", isOneRad: true };
+      }
+      if (Math.abs(deg) < 0.05) {
+        return { piText: "0", fullFormula: "l = 0", isOneRad: false };
+      }
+
+      function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+      const roundDeg = Math.round(deg);
+      const isIntegerDeg = Math.abs(deg - roundDeg) < 0.2;
+
+      if (isIntegerDeg) {
+        let num = roundDeg;
+        let den = 180;
+        let g = gcd(num, den);
+        num /= g;
+        den /= g;
+
+        let piText = "";
+        if (num === 1 && den === 1) piText = "π";
+        else if (num === 1) piText = `π/${den}`;
+        else if (den === 1) piText = `${num}π`;
+        else piText = `${num}π/${den}`;
+
+        return { piText: piText, fullFormula: `l = ${piText}`, isOneRad: false };
+      } else {
+        const ratio = (deg / 180).toFixed(2);
+        return { piText: `${ratio}π`, fullFormula: `l = ${ratio}π`, isOneRad: false };
+      }
+    }
+
+    /* 全局活动画布重绘回调（支持窗口变化和全屏切换自适应） */
+    let activeCanvasResizeHandler = null;
+
+    /* =====================================================================
+       3. 模块化交互详情数据库与全屏结构模板
+       ===================================================================== */
+    const detailData = {
+      1: {
+        title: "知识点一：正角、负角与任意角旋转机制",
+        badge: "全屏动态旋转模拟器",
+        html: `
+          <p><strong>定义：</strong>一条射线绕端点 $O$ 旋转：逆时针为正角，顺时针为负角，未作旋转为零角。</p>
+          <div class="interactive-controls">
+            <div class="ctrl-group">
+              <label>旋转角度 $\\alpha$：</label>
+              <input type="range" id="sliderAngle" min="-720" max="720" value="135" step="1" style="width: 200px;">
+              <span id="labelAngle" style="font-weight:bold; color:#0b4f6c; min-width:60px;">+135°</span>
+            </div>
+            <button class="pill-btn" onclick="smoothSpinAngle1(0)">零角 (0°)</button>
+            <button class="pill-btn" onclick="smoothSpinAngle1(450)">正大角 (+450°)</button>
+            <button class="pill-btn" onclick="smoothSpinAngle1(-210)">负角 (-210°)</button>
+          </div>
+          <div class="canvas-fullscreen-container" id="canvasBox1">
+            <canvas id="interactiveCanvas1"></canvas>
+          </div>
+          <p style="margin-top:8px; font-size:1rem; color:#486581;">💡 <strong>交互提示：</strong>支持拖动滑块，或<strong>直接在全屏圆盘上拖动终边发光手柄</strong>！</p>
+        `
+      },
+      2: {
+        title: "直角坐标系中角的标准位置与始边、终边",
+        badge: "坐标位置映射",
+        html: `
+          <p>在直角坐标系中，顶点重合于原点，始边落在 $x$ 轴正半轴，终边落在坐标平面内的射线即为终边。</p>
+          <div class="interactive-controls">
+            <div class="ctrl-group">
+              <label>当前终边角度：</label>
+              <span id="labelStandardAngle" style="font-size:1.2rem; font-weight:bold; color:#0b4f6c;">+60°</span>
+            </div>
+          </div>
+          <div class="canvas-fullscreen-container" id="canvasBox2">
+            <canvas id="interactiveCanvas2"></canvas>
+          </div>
+          <p style="margin-top:8px;">射线 $OA$ 固定在 $x$ 轴正半轴（始边），射线 $OB$ 为终边。请全屏拖动 $B$ 点体验。</p>
+        `
+      },
+      3: {
+        title: "知识点二：终边相同的角与周数 $k$ 动量旋转",
+        badge: "整圈平滑旋转引擎",
+        html: `
+          <p>所有与角 $\\alpha$ 终边相同的角集合：$\\{\\beta \\mid \\beta = \\alpha + k \\cdot 360^\\circ, k \\in \\mathbf{Z}\\}$。</p>
+          <div class="interactive-controls">
+            <div class="ctrl-group">
+              <label>基础角 $\\alpha$：</label>
+              <input type="range" id="sliderBaseAngle" min="0" max="359" value="45" step="1" style="width:130px;">
+              <span id="labelBaseAngle" style="font-weight:bold; color:#0b4f6c;">45°</span>
+            </div>
+            <div class="ctrl-group">
+              <label>周数 $k$：</label>
+              <button class="k-spin-btn" onclick="animateKChange(-1)" title="逆时针退回一整圈">-1</button>
+              <span id="labelKVal" style="font-weight:bold; font-size:1.2rem; color:#e65100; min-width:55px; text-align:center;">k = 1</span>
+              <button class="k-spin-btn" onclick="animateKChange(1)" title="平滑顺转一整圈">+1</button>
+            </div>
+            <div style="font-weight:bold; color:#12685c;">当前 $\\beta = $ <span id="labelTotalBeta">405°</span></div>
+          </div>
+          <div class="canvas-fullscreen-container" id="canvasBox3">
+            <canvas id="interactiveCanvas3"></canvas>
+          </div>
+          <p style="margin-top:8px; color:#486581;">🔥 <strong>真实动量旋转：</strong>点击上方 <strong>+1 或 -1</strong>，终边直线将**平滑旋转整整 $360^\circ$**！</p>
+        `
+      },
+      4: {
+        title: "象限角与轴线角探测及易混淆概念",
+        badge: "区域划分与集合对比",
+        html: `
+          <p>角的终边落在第几象限，就说这个角是第几象限角；落在坐标轴上则是轴线角。</p>
+          <div class="interactive-controls">
+            <div class="ctrl-group">
+              <label>探测判定：</label>
+              <span id="labelQuadrantStatus" style="font-size:1.15rem; font-weight:bold; color:#0b4f6c;">第一象限角</span>
+            </div>
+            <button class="pill-btn" id="btnToggleAcute" onclick="toggleAcuteZone()">高亮对比锐角范围 (0°, 90°)</button>
+          </div>
+          <div class="canvas-fullscreen-container" id="canvasBox4">
+            <canvas id="interactiveCanvas4"></canvas>
+          </div>
+          <p style="margin-top:8px;">拖动把手在四象限间游走，观察实时高亮区域。</p>
+        `
+      },
+      5: {
+        title: "知识点三：弧度制、圆心角与弧长 $\\pi$ 对照",
+        badge: "单位圆 r = 1 · 全屏自适应大圆盘",
+        html: `
+          <div style="background: rgba(255,255,255,0.7); padding: 10px 16px; border-radius: 14px; margin-bottom: 8px; border-left: 4px solid #12685c;">
+            <p><strong>单位圆架构（$r=1$）：</strong>在单位圆中，弧长公式 $l = |\\alpha| \\cdot r = |\\alpha|$。<strong>圆心角（角度制）与圆周弧长（$\\pi$ 弧度制）完全对应！</strong></p>
+          </div>
+
+          <!-- 控制器 -->
+          <div class="interactive-controls">
+            <div class="ctrl-group">
+              <label>圆心角度数 $\\theta$：</label>
+              <input type="range" id="sliderRadAngle" min="0" max="360" value="57.3" step="0.5" style="width: 130px;">
+              <span id="labelRadDegree" style="font-weight:bold; color:#0b4f6c; min-width: 55px;">57.3°</span>
+            </div>
+            <div class="ctrl-group">
+              <label>单位圆对应弧长 $l$：</label>
+              <span id="labelArcLengthPi" style="font-size: 1.22rem; font-weight: bold; color: #e65100;">l = 1</span>
+            </div>
+          </div>
+          
+          <!-- 预设角度按钮：点击全部丝滑转动到位 -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+            <button class="pill-btn active" id="btnRad1" onclick="smoothSpinRad(57.29578, this)">⭐ 设为 1 rad (弧长 l = 1)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(30, this)">30° (l = π/6)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(45, this)">45° (l = π/4)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(60, this)">60° (l = π/3)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(90, this)">90° (l = π/2)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(180, this)">180° (l = π)</button>
+            <button class="pill-btn" onclick="smoothSpinRad(360, this)">360° (l = 2π)</button>
+          </div>
+
+          <!-- 全屏自适应大画布容器 -->
+          <div class="canvas-fullscreen-container" id="canvasBox5">
+            <canvas id="interactiveCanvas5"></canvas>
+          </div>
+          <p style="margin-top:8px; color:#486581; font-size: 0.95rem;">💡 <strong>视觉对照：</strong>右上角可点击 <strong>⛶ 全屏铺满</strong>！圆心标角度，圆弧外标纯净 $\pi$ 弧长，二者关系一览无余。</p>
+        `
+      }
+    };
+
+    /* =====================================================================
+       4. 矢量坐标系与几何绘制引擎（全面支持动态半宽半高）
+       ===================================================================== */
+    function drawCoordinateSystem(ctx, cx, cy, radius = 125, isUnitCircle = false) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(100, 140, 175, 0.45)";
+      ctx.lineWidth = 1.4;
+
+      // 轴线自适应延伸
+      const ext = Math.max(radius * 0.22, 28);
+      ctx.beginPath();
+      ctx.moveTo(cx - radius - ext, cy); ctx.lineTo(cx + radius + ext, cy);
+      ctx.moveTo(cx, cy - radius - ext); ctx.lineTo(cx, cy + radius + ext);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(70, 110, 145, 0.9)";
+      ctx.font = "bold 15px KaiTi, 楷体";
+      ctx.fillText("x", cx + radius + ext + 4, cy + 5);
+      ctx.fillText("y", cx - 4, cy - radius - ext - 6);
+      ctx.fillText("O", cx - 16, cy + 18);
+
+      // 单位虚线圆
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "rgba(120, 170, 205, 0.32)";
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (isUnitCircle) {
+        ctx.fillStyle = "#5c7a99";
+        ctx.font = "bold 13px KaiTi, 楷体";
+        ctx.fillText("1", cx + radius - 4, cy + 18);
+        ctx.fillText("-1", cx - radius - 16, cy + 18);
+        ctx.fillText("1", cx + 8, cy - radius + 12);
+        ctx.fillText("-1", cx + 8, cy + radius + 4);
+      }
+      ctx.restore();
+    }
+
+    function drawAngleSpiral(ctx, cx, cy, angleDeg, baseRadius = 36) {
+      const isPositive = angleDeg >= 0;
+      const absDeg = Math.abs(angleDeg);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = isPositive ? "#128271" : "#8e44ad";
+
+      const step = 2;
+      const totalSteps = Math.max(Math.floor(absDeg / step), 1);
+      for (let i = 0; i <= totalSteps; i++) {
+        const curDeg = (i / totalSteps) * angleDeg;
+        const curRad = (-curDeg * Math.PI) / 180;
+        const r = baseRadius + (Math.abs(curDeg) / 360) * 14;
+        const x = cx + r * Math.cos(curRad);
+        const y = cy + r * Math.sin(curRad);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      if (absDeg > 8) {
+        const endRad = (-angleDeg * Math.PI) / 180;
+        const endR = baseRadius + (absDeg / 360) * 14;
+        const ex = cx + endR * Math.cos(endRad);
+        const ey = cy + endR * Math.sin(endRad);
+
+        const tangent = endRad + (isPositive ? -Math.PI / 2 : Math.PI / 2);
+        const arrowLen = 10;
+        ctx.fillStyle = isPositive ? "#128271" : "#8e44ad";
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(
+          ex - arrowLen * Math.cos(tangent - Math.PI / 6),
+          ey - arrowLen * Math.sin(tangent - Math.PI / 6)
+        );
+        ctx.lineTo(
+          ex - arrowLen * Math.cos(tangent + Math.PI / 6),
+          ey - arrowLen * Math.sin(tangent + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawAngleRays(ctx, cx, cy, angleDeg, radius = 125) {
+      const rad = (-angleDeg * Math.PI) / 180;
+      const bx = cx + radius * Math.cos(rad);
+      const by = cy + radius * Math.sin(rad);
+
+      ctx.save();
+      // 始边
+      ctx.beginPath();
+      ctx.lineWidth = 3.8;
+      ctx.strokeStyle = "#486581";
+      ctx.moveTo(cx, cy); ctx.lineTo(cx + radius, cy);
+      ctx.stroke();
+
+      ctx.fillStyle = "#1e3a5f";
+      ctx.beginPath();
+      ctx.arc(cx + radius, cy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = "bold 15px KaiTi, 楷体";
+      ctx.fillText("A (始边)", cx + radius - 15, cy + 24);
+
+      // 终边
+      ctx.beginPath();
+      ctx.lineWidth = 3.8;
+      ctx.strokeStyle = "#0b4f6c";
+      ctx.moveTo(cx, cy); ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      ctx.shadowColor = "rgba(11, 79, 108, 0.4)";
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(bx, by, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = "#0b4f6c";
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#0b4f6c";
+      ctx.fillText("B (终边)", bx + 12, by - 8);
+
+      ctx.restore();
+      return { bx, by };
+    }
+
+    /* 弧度制与圆心角专属绘制（动态半径自适应全屏） */
+    function drawRadianIllustration(ctx, cx, cy, angleDeg, radius = 125) {
+      ctx.save();
+      drawCoordinateSystem(ctx, cx, cy, radius, true);
+
+      const rad = (angleDeg * Math.PI) / 180;
+      const isExact1Rad = Math.abs(angleDeg - 57.29578) < 1.2;
+      const arcData = getPiArcLength(angleDeg);
+
+      // 1. 扇形半透明填充
+      ctx.fillStyle = isExact1Rad ? "rgba(230, 81, 0, 0.16)" : "rgba(18, 130, 113, 0.12)";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, 0, -rad, true);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. 绘制圆弧 (Arc l)
+      ctx.beginPath();
+      ctx.lineWidth = isExact1Rad ? 6 : 4.5;
+      ctx.strokeStyle = isExact1Rad ? "#e65100" : "#128271";
+      ctx.arc(cx, cy, radius, 0, -rad, true);
+      ctx.stroke();
+
+      // 3. 始边 OA 并标出【半径 r = 1】
+      ctx.beginPath();
+      ctx.lineWidth = 3.6;
+      ctx.strokeStyle = "#486581";
+      ctx.moveTo(cx, cy); ctx.lineTo(cx + radius, cy);
+      ctx.stroke();
+
+      ctx.fillStyle = "#0b4f6c";
+      ctx.font = "bold 15px KaiTi, 楷体";
+      ctx.fillText("半径 r = 1", cx + radius / 2 - 32, cy + 22);
+
+      // 4. 绘制终边 OB
+      const bx = cx + radius * Math.cos(-rad);
+      const by = cy + radius * Math.sin(-rad);
+      ctx.beginPath();
+      ctx.lineWidth = 3.6;
+      ctx.strokeStyle = "#0b4f6c";
+      ctx.moveTo(cx, cy); ctx.lineTo(bx, by);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(11, 79, 108, 0.4)";
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(bx, by, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = "#0b4f6c";
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // 5. 圆心处清晰显示圆心角（角度制）
+      if (angleDeg > 2) {
+        const innerR = Math.max(radius * 0.24, 32);
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = 2.4;
+        ctx.strokeStyle = "#e65100";
+        ctx.arc(cx, cy, innerR, 0, -rad, true);
+        ctx.stroke();
+
+        const midRad = -rad / 2;
+        const textDist = innerR + 20;
+        const degTextX = cx + textDist * Math.cos(midRad);
+        const degTextY = cy + textDist * Math.sin(midRad);
+
+        ctx.font = "bold 15px KaiTi, 楷体";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const degFormatted = isExact1Rad ? "57.3°" : `${Math.round(angleDeg * 10) / 10}°`;
+        const degTextWidth = ctx.measureText(degFormatted).width;
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.fillRect(degTextX - degTextWidth / 2 - 5, degTextY - 10, degTextWidth + 10, 20);
+        ctx.strokeStyle = "rgba(230, 81, 0, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(degTextX - degTextWidth / 2 - 5, degTextY - 10, degTextWidth + 10, 20);
+
+        ctx.fillStyle = "#e65100";
+        ctx.fillText(degFormatted, degTextX, degTextY + 1);
+        ctx.restore();
+      }
+
+      // 6. 弧长外侧纯净显示 π 形式（去掉约等于）
+      const midRad = -rad / 2;
+      const arcLabelR = radius + 28;
+      const lx = cx + arcLabelR * Math.cos(midRad);
+      const ly = cy + arcLabelR * Math.sin(midRad);
+
+      ctx.save();
+      ctx.font = "bold 16px KaiTi, 楷体";
+      
+      const arcLengthPureText = `弧长 ${arcData.fullFormula}`;
+      const textWidth = ctx.measureText(arcLengthPureText).width;
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      ctx.fillRect(lx - textWidth / 2 - 9, ly - 15, textWidth + 18, 26);
+      ctx.strokeStyle = isExact1Rad ? "#e65100" : "#52a382";
+      ctx.lineWidth = 1.3;
+      ctx.strokeRect(lx - textWidth / 2 - 9, ly - 15, textWidth + 18, 26);
+
+      ctx.fillStyle = isExact1Rad ? "#e65100" : "#128271";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(arcLengthPureText, lx, ly - 1);
+      ctx.restore();
+
+      // 7. 若为 1 rad，顶端特别注明定义
+      if (isExact1Rad) {
+        ctx.fillStyle = "#e65100";
+        ctx.font = "bold 16px KaiTi, 楷体";
+        ctx.fillText("1 rad (弧长 l = 半径 r = 1)", cx + 20, cy - radius - 12);
+      }
+      ctx.restore();
+    }
+
+    /* =====================================================================
+       5. 卡片缩略预览初始化
+       ===================================================================== */
+    function renderCardPreviews() {
+      const c1 = document.getElementById("previewCanvas1");
+      if (c1) {
+        const { ctx } = setupSharpCanvas(c1, 290, 160);
+        drawCoordinateSystem(ctx, 145, 80, 65);
+        drawAngleSpiral(ctx, 145, 80, 135, 24);
+        drawAngleRays(ctx, 145, 80, 135, 65);
+      }
+      const c2 = document.getElementById("previewCanvas2");
+      if (c2) {
+        const { ctx } = setupSharpCanvas(c2, 290, 160);
+        drawCoordinateSystem(ctx, 145, 80, 65);
+        drawAngleSpiral(ctx, 145, 80, 60, 24);
+        drawAngleRays(ctx, 145, 80, 60, 65);
+      }
+      const c3 = document.getElementById("previewCanvas3");
+      if (c3) {
+        const { ctx } = setupSharpCanvas(c3, 290, 160);
+        drawCoordinateSystem(ctx, 145, 80, 65);
+        drawAngleSpiral(ctx, 145, 80, 45 + 360, 20);
+        drawAngleRays(ctx, 145, 80, 45, 65);
+      }
+      const c4 = document.getElementById("previewCanvas4");
+      if (c4) {
+        const { ctx } = setupSharpCanvas(c4, 290, 160);
+        drawCoordinateSystem(ctx, 145, 80, 65);
+        ctx.fillStyle = "rgba(94, 186, 172, 0.22)";
+        ctx.beginPath(); ctx.moveTo(145, 80);
+        ctx.arc(145, 80, 65, -Math.PI / 2, 0); ctx.closePath(); ctx.fill();
+        drawAngleRays(ctx, 145, 80, 45, 65);
+      }
+      const c5 = document.getElementById("previewCanvas5");
+      if (c5) {
+        const { ctx } = setupSharpCanvas(c5, 290, 160);
+        drawRadianIllustration(ctx, 145, 80, 60, 62);
+      }
+    }
+
+    /* =====================================================================
+       6. 模态框全屏自适应交互控制引擎
+       ===================================================================== */
+    let currentInteractiveAngle = 135;
+    let standardAngle = 60;
+    let baseAngle3 = 45;
+    let currentK3 = 1;
+    let animAngle3 = 45 + 1 * 360;
+    let targetAngle3 = 45 + 1 * 360;
+    let isSpinning3 = false;
+    let spinRafId3 = null;
+
+    let quadAngle = 45;
+    let showAcuteZone = false;
+
+    let currentRadAngle = 57.29578;
+    let isSpinningRad = false;
+    let radRafId = null;
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function initModalInteractiveCanvas(id) {
+      if (id === "1") {
+        const box = document.getElementById("canvasBox1");
+        const canvas = document.getElementById("interactiveCanvas1");
+        const slider = document.getElementById("sliderAngle");
+        const label = document.getElementById("labelAngle");
+        if (!canvas || !box) return;
+
+        function render() {
+          const w = box.clientWidth || 600;
+          const h = box.clientHeight || 400;
+          const { ctx } = setupSharpCanvas(canvas, w, h);
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) * 0.36;
+
+          ctx.clearRect(0, 0, w, h);
+          drawCoordinateSystem(ctx, cx, cy, radius);
+          drawAngleSpiral(ctx, cx, cy, currentInteractiveAngle, Math.max(radius * 0.25, 28));
+          drawAngleRays(ctx, cx, cy, currentInteractiveAngle, radius);
+        }
+
+        activeCanvasResizeHandler = render;
+
+        slider.addEventListener("input", (e) => {
+          currentInteractiveAngle = parseInt(e.target.value);
+          label.innerText = (currentInteractiveAngle > 0 ? "+" : "") + currentInteractiveAngle + "°";
+          render();
+        });
+
+        window.smoothSpinAngle1 = function(targetDeg) {
+          const start = currentInteractiveAngle;
+          const diff = targetDeg - start;
+          const duration = 650;
+          const startTime = performance.now();
+
+          function step(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            currentInteractiveAngle = Math.round(start + diff * easeInOutCubic(p));
+            slider.value = currentInteractiveAngle;
+            label.innerText = (currentInteractiveAngle > 0 ? "+" : "") + currentInteractiveAngle + "°";
+            render();
+            if (p < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        };
+
+        bindDynamicCanvasRotation(canvas, (deg) => {
+          currentInteractiveAngle = deg;
+          slider.value = deg;
+          label.innerText = (deg > 0 ? "+" : "") + deg + "°";
+          render();
+        });
+
+        render();
+      } else if (id === "2") {
+        const box = document.getElementById("canvasBox2");
+        const canvas = document.getElementById("interactiveCanvas2");
+        const label = document.getElementById("labelStandardAngle");
+        if (!canvas || !box) return;
+
+        function render() {
+          const w = box.clientWidth || 600;
+          const h = box.clientHeight || 400;
+          const { ctx } = setupSharpCanvas(canvas, w, h);
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) * 0.36;
+
+          ctx.clearRect(0, 0, w, h);
+          drawCoordinateSystem(ctx, cx, cy, radius);
+          drawAngleSpiral(ctx, cx, cy, standardAngle, Math.max(radius * 0.25, 28));
+          drawAngleRays(ctx, cx, cy, standardAngle, radius);
+        }
+
+        activeCanvasResizeHandler = render;
+
+        bindDynamicCanvasRotation(canvas, (deg) => {
+          standardAngle = deg;
+          label.innerText = (deg > 0 ? "+" : "") + deg + "°";
+          render();
+        });
+
+        render();
+      } else if (id === "3") {
+        const box = document.getElementById("canvasBox3");
+        const canvas = document.getElementById("interactiveCanvas3");
+        const slider = document.getElementById("sliderBaseAngle");
+        const labelBase = document.getElementById("labelBaseAngle");
+        const labelK = document.getElementById("labelKVal");
+        const labelTotal = document.getElementById("labelTotalBeta");
+        if (!canvas || !box) return;
+
+        function render3() {
+          const w = box.clientWidth || 600;
+          const h = box.clientHeight || 400;
+          const { ctx } = setupSharpCanvas(canvas, w, h);
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) * 0.36;
+
+          ctx.clearRect(0, 0, w, h);
+          drawCoordinateSystem(ctx, cx, cy, radius);
+          drawAngleSpiral(ctx, cx, cy, animAngle3, Math.max(radius * 0.22, 26));
+          drawAngleRays(ctx, cx, cy, animAngle3, radius);
+        }
+
+        activeCanvasResizeHandler = render3;
+
+        slider.addEventListener("input", (e) => {
+          baseAngle3 = parseInt(e.target.value);
+          targetAngle3 = baseAngle3 + currentK3 * 360;
+          animAngle3 = targetAngle3;
+          labelBase.innerText = baseAngle3 + "°";
+          labelTotal.innerText = targetAngle3 + "°";
+          render3();
+        });
+
+        window.animateKChange = function (delta) {
+          if (isSpinning3) return;
+          currentK3 = Math.max(-2, Math.min(3, currentK3 + delta));
+          targetAngle3 = baseAngle3 + currentK3 * 360;
+
+          labelK.innerText = "k = " + currentK3;
+          labelTotal.innerText = targetAngle3 + "°";
+
+          isSpinning3 = true;
+          const startAngle = animAngle3;
+          const diff = targetAngle3 - startAngle;
+          const duration = 800;
+          const startTime = performance.now();
+
+          if (spinRafId3) cancelAnimationFrame(spinRafId3);
+
+          function spinStep(now) {
+            const elapsed = now - startTime;
+            const p = Math.min(elapsed / duration, 1);
+            animAngle3 = startAngle + diff * easeInOutCubic(p);
+            render3();
+
+            if (p < 1) {
+              spinRafId3 = requestAnimationFrame(spinStep);
+            } else {
+              animAngle3 = targetAngle3;
+              render3();
+              isSpinning3 = false;
+            }
+          }
+          spinRafId3 = requestAnimationFrame(spinStep);
+        };
+
+        render3();
+      } else if (id === "4") {
+        const box = document.getElementById("canvasBox4");
+        const canvas = document.getElementById("interactiveCanvas4");
+        const statusLabel = document.getElementById("labelQuadrantStatus");
+        if (!canvas || !box) return;
+
+        function getQuadrantInfo(deg) {
+          let norm = deg % 360;
+          if (norm < 0) norm += 360;
+          if (norm === 0) return "x 轴正半轴（轴线角）";
+          if (norm === 90) return "y 轴正半轴（轴线角）";
+          if (norm === 180) return "x 轴负半轴（轴线角）";
+          if (norm === 270) return "y 轴负半轴（轴线角）";
+          if (norm > 0 && norm < 90) return "第一象限角";
+          if (norm > 90 && norm < 180) return "第二象限角";
+          if (norm > 180 && norm < 270) return "第三象限角";
+          return "第四象限角";
+        }
+
+        function render4() {
+          const w = box.clientWidth || 600;
+          const h = box.clientHeight || 400;
+          const { ctx } = setupSharpCanvas(canvas, w, h);
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) * 0.36;
+
+          ctx.clearRect(0, 0, w, h);
+          let norm = quadAngle % 360;
+          if (norm < 0) norm += 360;
+
+          if (norm > 0 && norm < 90) {
+            ctx.fillStyle = "rgba(94, 186, 172, 0.28)";
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, -Math.PI / 2, 0); ctx.fill();
+          } else if (norm > 90 && norm < 180) {
+            ctx.fillStyle = "rgba(100, 170, 240, 0.28)";
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, -Math.PI, -Math.PI / 2); ctx.fill();
+          } else if (norm > 180 && norm < 270) {
+            ctx.fillStyle = "rgba(220, 160, 240, 0.28)";
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, Math.PI / 2, Math.PI); ctx.fill();
+          } else if (norm > 270 && norm < 360) {
+            ctx.fillStyle = "rgba(240, 190, 120, 0.28)";
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, 0, Math.PI / 2); ctx.fill();
+          }
+
+          if (showAcuteZone) {
+            ctx.save();
+            ctx.fillStyle = "rgba(255, 82, 82, 0.25)";
+            ctx.strokeStyle = "rgba(255, 82, 82, 0.85)";
+            ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius * 0.8, -Math.PI / 2, 0); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#d32f2f";
+            ctx.font = "bold 14px KaiTi, 楷体";
+            ctx.fillText("锐角 (0°, 90°)", cx + 18, cy - radius * 0.35);
+            ctx.restore();
+          }
+
+          drawCoordinateSystem(ctx, cx, cy, radius);
+          drawAngleSpiral(ctx, cx, cy, quadAngle, Math.max(radius * 0.25, 28));
+          drawAngleRays(ctx, cx, cy, quadAngle, radius);
+
+          statusLabel.innerText = `${getQuadrantInfo(quadAngle)} (${quadAngle > 0 ? "+" : ""}${quadAngle}°)`;
+        }
+
+        activeCanvasResizeHandler = render4;
+
+        window.toggleAcuteZone = function () {
+          showAcuteZone = !showAcuteZone;
+          const btn = document.getElementById("btnToggleAcute");
+          if (btn) btn.classList.toggle("active", showAcuteZone);
+          render4();
+        };
+
+        bindDynamicCanvasRotation(canvas, (deg) => {
+          quadAngle = deg;
+          render4();
+        });
+
+        render4();
+      } else if (id === "5") {
+        // === 知识点三：全屏铺满单位圆弧度制 ===
+        const box = document.getElementById("canvasBox5");
+        const canvas = document.getElementById("interactiveCanvas5");
+        const slider = document.getElementById("sliderRadAngle");
+        const labelDeg = document.getElementById("labelRadDegree");
+        const labelArcPi = document.getElementById("labelArcLengthPi");
+        if (!canvas || !box) return;
+
+        function render5() {
+          const w = box.clientWidth || 700;
+          const h = box.clientHeight || 450;
+          const { ctx } = setupSharpCanvas(canvas, w, h);
+          const cx = w / 2, cy = h / 2;
+          const radius = Math.min(w, h) * 0.37; // 全屏铺满的自适应半径
+
+          labelDeg.innerText = currentRadAngle.toFixed(1) + "°";
+          const arcData = getPiArcLength(currentRadAngle);
+          labelArcPi.innerText = arcData.fullFormula;
+
+          ctx.clearRect(0, 0, w, h);
+          drawRadianIllustration(ctx, cx, cy, currentRadAngle, radius);
+        }
+
+        activeCanvasResizeHandler = render5;
+
+        slider.addEventListener("input", (e) => {
+          if (isSpinningRad && radRafId) cancelAnimationFrame(radRafId);
+          isSpinningRad = false;
+          currentRadAngle = parseFloat(e.target.value);
+          render5();
+        });
+
+        window.smoothSpinRad = function(targetDeg, btnEl) {
+          if (btnEl) {
+            document.querySelectorAll("#detailModal .pill-btn").forEach(b => b.classList.remove("active"));
+            btnEl.classList.add("active");
+          }
+
+          if (radRafId) cancelAnimationFrame(radRafId);
+          isSpinningRad = true;
+
+          const startDeg = currentRadAngle;
+          const diff = targetDeg - startDeg;
+          const duration = Math.min(Math.max(Math.abs(diff) * 2.2, 420), 750);
+          const startTime = performance.now();
+
+          function spinRadStep(now) {
+            const elapsed = now - startTime;
+            const p = Math.min(elapsed / duration, 1);
+            currentRadAngle = startDeg + diff * easeInOutCubic(p);
+            slider.value = currentRadAngle;
+            render5();
+
+            if (p < 1) {
+              radRafId = requestAnimationFrame(spinRadStep);
+            } else {
+              currentRadAngle = targetDeg;
+              slider.value = currentRadAngle;
+              render5();
+              isSpinningRad = false;
+            }
+          }
+          radRafId = requestAnimationFrame(spinRadStep);
+        };
+
+        bindDynamicCanvasRotation(canvas, (deg) => {
+          if (isSpinningRad && radRafId) cancelAnimationFrame(radRafId);
+          isSpinningRad = false;
+          currentRadAngle = deg;
+          slider.value = deg;
+          render5();
+        });
+
+        render5();
+      }
+    }
+
+    /* 动态计算中心点的交互手柄拖拽绑定（适应任意全屏尺寸） */
+    function bindDynamicCanvasRotation(canvas, onAngleChange) {
+      let isDragging = false;
+      function handlePointer(e) {
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const x = clientX - rect.left - cx;
+        const y = clientY - rect.top - cy;
+
+        let rad = Math.atan2(-y, x);
+        let deg = (rad * 180) / Math.PI;
+        if (deg < 0) deg += 360;
+        onAngleChange(Math.round(deg * 10) / 10);
+      }
+
+      canvas.addEventListener("pointerdown", (e) => {
+        isDragging = true;
+        canvas.setPointerCapture(e.pointerId);
+        handlePointer(e);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (isDragging) handlePointer(e);
+      });
+      const endDrag = () => { isDragging = false; };
+      canvas.addEventListener("pointerup", endDrag);
+      canvas.addEventListener("pointercancel", endDrag);
+    }
+
+    /* =====================================================================
+       7. 模态框全屏放大 / 收回 / 铺满全屏切换 (FLIP & Fullscreen Toggle)
+       ===================================================================== */
+    const detailOverlay = document.getElementById('detailOverlay');
+    const detailModal = document.getElementById('detailModal');
+    const modalBody = document.getElementById('modalBody');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const btnToggleFullscreen = document.getElementById('btnToggleFullscreen');
+    let activeOriginCard = null;
+    let isFullyExpanded = false;
+
+    function applyModalLayout(isInitialOpen = false) {
+      if (isFullyExpanded) {
+        detailModal.classList.add('fullscreen-mode');
+      } else {
+        detailModal.classList.remove('fullscreen-mode');
+        // 默认大视窗近乎全屏铺满 (95vw × 92vh)
+        const targetW = Math.min(window.innerWidth * 0.95, 1180);
+        const targetH = Math.min(window.innerHeight * 0.92, 860);
+        const targetL = (window.innerWidth - targetW) / 2;
+        const targetT = (window.innerHeight - targetH) / 2;
+
+        detailModal.style.top = `${targetT}px`;
+        detailModal.style.left = `${targetL}px`;
+        detailModal.style.width = `${targetW}px`;
+        detailModal.style.height = `${targetH}px`;
+        detailModal.style.borderRadius = '28px';
+      }
+      setTimeout(() => {
+        if (activeCanvasResizeHandler) activeCanvasResizeHandler();
+      }, isInitialOpen ? 120 : 60);
+    }
+
+    btnToggleFullscreen.addEventListener('click', () => {
+      isFullyExpanded = !isFullyExpanded;
+      btnToggleFullscreen.innerText = isFullyExpanded ? "🗗" : "⛶";
+      applyModalLayout();
+    });
+
+    cards = document.querySelectorAll('.glass-card');
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        activeOriginCard = card;
+        const id = card.getAttribute('data-id');
+        const data = detailData[id];
+
+        modalBody.innerHTML = `
+          <span class="badge">${data.badge}</span>
+          <h2>${data.title}</h2>
+          ${data.html}
+        `;
+        renderMathInElement(modalBody, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false }
+          ]
+        });
+
+        const startRect = card.getBoundingClientRect();
+        detailModal.style.transition = 'none';
+        detailModal.style.top = `${startRect.top}px`;
+        detailModal.style.left = `${startRect.left}px`;
+        detailModal.style.width = `${startRect.width}px`;
+        detailModal.style.height = `${startRect.height}px`;
+        detailModal.style.borderRadius = '26px';
+        detailModal.style.opacity = '0.7';
+
+        detailOverlay.classList.add('active');
+
+        requestAnimationFrame(() => {
+          detailModal.style.transition = 'all 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+          detailModal.style.opacity = '1';
+          applyModalLayout(true);
+          setTimeout(() => initModalInteractiveCanvas(id), 100);
+        });
+      });
+    });
+
+    function closeModal() {
+      if (!activeOriginCard) return;
+      isFullyExpanded = false;
+      detailModal.classList.remove('fullscreen-mode');
+      btnToggleFullscreen.innerText = "⛶";
+
+      const originRect = activeOriginCard.getBoundingClientRect();
+      detailModal.style.transition = 'all 0.38s cubic-bezier(0.25, 1, 0.5, 1)';
+      detailModal.style.top = `${originRect.top}px`;
+      detailModal.style.left = `${originRect.left}px`;
+      detailModal.style.width = `${originRect.width}px`;
+      detailModal.style.height = `${originRect.height}px`;
+      detailModal.style.borderRadius = '26px';
+      detailModal.style.opacity = '0';
+
+      detailOverlay.classList.remove('active');
+      activeCanvasResizeHandler = null;
+
+      setTimeout(() => {
+        activeOriginCard = null;
+        renderCardPreviews();
+      }, 400);
+    }
+
+    closeModalBtn.addEventListener('click', closeModal);
+    detailOverlay.addEventListener('click', (e) => {
+      if (e.target === detailOverlay) closeModal();
+    });
+
+    window.addEventListener('resize', () => {
+      if (detailOverlay.classList.contains('active')) {
+        applyModalLayout();
+      }
+    });
+
+    /* =====================================================================
+       8. 顶部胶囊导航栏 & 初始渲染
+       ===================================================================== */
+    const navBar = document.getElementById('navBar');
+    const capsule = document.getElementById('capsule');
+    const navBtns = document.querySelectorAll('.nav-btn');
+    let currentNavIndex = 0;
+
+    function updateCapsule(targetBtn, isInitial = false) {
+      const barRect = navBar.getBoundingClientRect();
+      const btnRect = targetBtn.getBoundingClientRect();
+      const targetLeft = btnRect.left - barRect.left - 6;
+      const targetWidth = btnRect.width;
+      const newIndex = Array.from(navBtns).indexOf(targetBtn);
+
+      if (isInitial) {
+        capsule.style.transform = `translateX(${targetLeft}px)`;
+        capsule.style.width = `${targetWidth}px`;
+      } else {
+        const diffIndex = newIndex - currentNavIndex;
+        const stretchFactor = 1 + Math.min(Math.abs(diffIndex) * 0.28, 0.6);
+        capsule.style.transform = `translateX(${targetLeft}px) scaleX(${stretchFactor})`;
+        capsule.style.width = `${targetWidth}px`;
+        setTimeout(() => {
+          capsule.style.transform = `translateX(${targetLeft}px) scaleX(1)`;
+        }, 180);
+      }
+      currentNavIndex = newIndex;
+    }
+
+    window.addEventListener('load', () => {
+      const activeBtn = document.querySelector('.nav-btn.active');
+      updateCapsule(activeBtn, true);
+      renderCardPreviews();
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ]
+      });
+    });
+
+    navBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        navBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateCapsule(btn);
+
+        const filter = btn.getAttribute('data-filter');
+        cards.forEach(card => {
+          if (filter === 'all' || card.getAttribute('data-category') === filter) {
+            card.style.display = 'flex';
+            setTimeout(() => { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 10);
+          } else {
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => { card.style.display = 'none'; }, 250);
+          }
+        });
+      });
+    });
+
+    /* =====================================================================
+       9. 卡片内部柔光光斑
+       ===================================================================== */
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.setProperty('--mouse-x', `-999px`);
+        card.style.setProperty('--mouse-y', `-999px`);
+      });
+    });
+
+    /* =====================================================================
+       10. Apple Pencil 压感手写板
+       ===================================================================== */
+    const penFab = document.getElementById('penFab');
+    const drawingToolbar = document.getElementById('drawingToolbar');
+    const dCanvas = document.getElementById('drawingCanvas');
+    const dCtx = dCanvas.getContext('2d');
+    const btnPen = document.getElementById('btnPen');
+    const btnEraser = document.getElementById('btnEraser');
+    const btnClear = document.getElementById('btnClear');
+    const btnCloseDraw = document.getElementById('btnCloseDraw');
+
+    let isDrawingOpen = false;
+    let isDrawing = false;
+    let currentTool = 'pen';
+    let lastX = 0, lastY = 0;
+
+    function resizeDrawCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      dCanvas.width = window.innerWidth * dpr;
+      dCanvas.height = window.innerHeight * dpr;
+      dCtx.scale(dpr, dpr);
+      dCtx.lineCap = 'round';
+      dCtx.lineJoin = 'round';
+    }
+    window.addEventListener('resize', resizeDrawCanvas);
+    resizeDrawCanvas();
+
+    penFab.addEventListener('click', () => {
+      isDrawingOpen = !isDrawingOpen;
+      if (isDrawingOpen) {
+        drawingToolbar.classList.add('open');
+        dCanvas.classList.add('drawing-active');
+      } else {
+        closeDrawingMode();
+      }
+    });
+
+    function closeDrawingMode() {
+      isDrawingOpen = false;
+      drawingToolbar.classList.remove('open');
+      dCanvas.classList.remove('drawing-active');
+    }
+    btnCloseDraw.addEventListener('click', closeDrawingMode);
+
+    btnPen.addEventListener('click', () => {
+      currentTool = 'pen';
+      btnPen.classList.add('active');
+      btnEraser.classList.remove('active');
+    });
+
+    btnEraser.addEventListener('click', () => {
+      currentTool = 'eraser';
+      btnEraser.classList.add('active');
+      btnPen.classList.remove('active');
+    });
+
+    btnClear.addEventListener('click', () => {
+      dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+    });
+
+    dCanvas.addEventListener('pointerdown', (e) => {
+      if (!isDrawingOpen) return;
+      isDrawing = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    dCanvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing || !isDrawingOpen) return;
+      dCtx.beginPath();
+      dCtx.moveTo(lastX, lastY);
+      dCtx.lineTo(e.clientX, e.clientY);
+
+      const pressure = (e.pressure && e.pressure > 0) ? e.pressure : 0.5;
+      if (currentTool === 'pen') {
+        dCtx.globalCompositeOperation = 'source-over';
+        dCtx.strokeStyle = '#e63946';
+        dCtx.lineWidth = pressure * 6 + 1.5;
+      } else {
+        dCtx.globalCompositeOperation = 'destination-out';
+        dCtx.lineWidth = 32;
+      }
+      dCtx.stroke();
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    const stopDrawing = () => { isDrawing = false; };
+    dCanvas.addEventListener('pointerup', stopDrawing);
+    dCanvas.addEventListener('pointercancel', stopDrawing);
+    dCanvas.addEventListener('pointerout', stopDrawing);
+  </script>
+</body>
+</html>
