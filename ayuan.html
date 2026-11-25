@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>圆锥曲线蒙日圆实验室</title>
+  
+  <!-- 引入 KaTeX 确保数学公式工整优雅、绝不乱码 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    :root {
+      --bg-mint: #f2f7f4;          /* 雅致浅绿白底色 */
+      --card-bg: #ffffff;
+      --kaiti-font: "KaiTi", "STKaiti", "楷体", "楷体_GB2312", serif;
+      --ellipse-color: #1d4ed8;    /* 宝蓝曲线 */
+      --monge-color: #db2777;      /* 玫红蒙日圆 */
+      --tangent-color: #059669;    /* 翠绿切线 */
+      --point-p: #dc2626;          /* 高亮红动点P */
+      --point-ab: #7c3aed;         /* 紫色切点 */
+      --line-color: #d97706;       /* 琥珀黄定直线 */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-mint);
+      color: #1f2d24;
+      font-family: var(--kaiti-font);
+      padding: 10px 14px 24px 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; /* 顶端靠齐，绝不下坠 */
+      overflow-x: hidden;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #064e3b;
+      letter-spacing: 1px;
+    }
+
+    p.subtitle {
+      font-size: 1rem;
+      color: #4b6354;
+      margin-top: 2px;
+    }
+
+    /* 顶部控制栏 */
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tab-bar {
+      display: flex;
+      background: #e1ede5;
+      padding: 4px;
+      border-radius: 12px;
+      gap: 6px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 8px 14px;
+      font-size: 1.02rem;
+      font-family: var(--kaiti-font);
+      font-weight: 700;
+      color: #065f46;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.6); }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #047857;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .btn-top {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--kaiti-font);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      touch-action: manipulation;
+    }
+
+    .btn-toggle-panel {
+      background: #047857;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25);
+    }
+    .btn-toggle-panel:hover { background: #065f46; transform: translateY(-1px); }
+
+    .btn-toggle-draw {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+    .btn-toggle-draw:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .btn-toggle-draw.active {
+      background: #dc2626;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+    }
+
+    /* 主工作区容器：靠顶对齐 */
+    .workspace {
+      display: flex;
+      width: 100%;
+      max-width: 1320px;
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 10px 25px -5px rgba(0, 50, 20, 0.06);
+      border: 1px solid #d7ebe0;
+      gap: 14px;
+      align-items: flex-start;
+      position: relative;
+      overflow: hidden;
+      transition: max-width 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    /* 左侧控制面板 */
+    .panel {
+      width: 410px;
+      min-width: 410px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: width 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                  min-width 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+                  opacity 0.3s ease,
+                  transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .workspace.panel-collapsed .panel {
+      width: 0 !important;
+      min-width: 0 !important;
+      margin-right: -14px;
+      opacity: 0;
+      transform: translateX(-50px);
+      pointer-events: none;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .card {
+      background: #f8faf8;
+      border: 1px solid #e1ebe4;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: #14532d;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px dashed #cbdad0;
+      padding-bottom: 6px;
+    }
+
+    .sub-curve-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .sub-btn {
+      flex: 1;
+      padding: 7px 4px;
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+      border-radius: 8px;
+      font-family: var(--kaiti-font);
+      font-size: 0.98rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.15s;
+      touch-action: manipulation;
+    }
+
+    .sub-btn.active {
+      background: #059669;
+      color: white;
+      border-color: #059669;
+    }
+
+    .math-info {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #26382e;
+    }
+
+    .math-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #eaf5ee;
+      color: #065f46;
+      font-weight: bold;
+      margin: 3px 0;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .control-row input[type="range"] {
+      width: 52%;
+      height: 28px;
+      -webkit-appearance: none;
+      background: transparent;
+      cursor: pointer;
+      touch-action: pan-x;
+    }
+
+    .control-row input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      background: #d1fae5;
+      border-radius: 4px;
+    }
+
+    .control-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 24px;
+      width: 24px;
+      border-radius: 50%;
+      background: #059669;
+      margin-top: -8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button.btn {
+      padding: 7px 13px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: var(--kaiti-font);
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: 0.15s;
+      touch-action: manipulation;
+    }
+
+    button.btn-primary { background: #059669; color: white; }
+    button.btn-primary:hover { background: #047857; }
+    button.btn-outline { background: white; border-color: #cbd5e1; color: #334155; }
+    button.btn-outline:hover { background: #f1f5f9; }
+
+    .badge-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+    .status-ok { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .status-alert { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    .legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 0.92rem;
+      margin-top: 4px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+
+    /* 右侧 Canvas 画板区 */
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      position: relative;
+      min-width: 0;
+      width: 100%;
+    }
+
+    canvas {
+      background-color: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #d7ebe0;
+      box-shadow: inset 0 0 16px rgba(0,0,0,0.02);
+      cursor: crosshair;
+      width: 100%;
+      height: 560px;
+      display: block;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* 浮动白板/涂鸦工具条 */
+    .draw-toolbar {
+      position: absolute;
+      top: 10px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #a7f3d0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 6px 10px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+      animation: fadeIn 0.2s ease-out;
+      flex-wrap: wrap;
+    }
+
+    .draw-toolbar.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tool-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-family: var(--kaiti-font);
+      font-size: 0.92rem;
+      font-weight: bold;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tool-btn.active {
+      background: #047857;
+      color: white;
+      border-color: #047857;
+    }
+
+    .color-picker-group {
+      display: flex;
+      gap: 5px;
+      padding: 0 4px;
+      border-left: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 2px rgba(0,0,0,0.4);
+      transition: transform 0.15s;
+    }
+
+    .color-dot.active {
+      transform: scale(1.22);
+      border-color: #0f172a;
+    }
+
+    .canvas-hint {
+      position: absolute;
+      bottom: 12px;
+      font-size: 0.92rem;
+      color: #475569;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 3px 12px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📐 圆锥曲线的蒙日圆 (Monge's Circle) 交互实验室</h1>
+    <p class="subtitle">互相垂直切线交点轨迹·三大圆锥曲线与高考经典试题解析</p>
+  </header>
+
+  <!-- 顶部控制栏 -->
+  <div class="top-controls">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(1)">① 蒙日圆原理 (三大曲线)</button>
+      <button class="tab-btn" onclick="switchTab(2)">② 题目探究一：存在钝角 (相交)</button>
+      <button class="tab-btn" onclick="switchTab(3)">③ 题目探究二：恒为锐角 (相离)</button>
+    </div>
+    <button class="btn-top btn-toggle-panel" id="main-toggle-btn" onclick="toggleLeftPanel()">
+      ◀ 收起面板 (顶端放大居中)
+    </button>
+    <button class="btn-top btn-toggle-draw" id="draw-mode-btn" onclick="toggleDrawMode()">
+      🖍️ 开启板书批注 (涂鸦/画线)
+    </button>
+  </div>
+
+  <div class="workspace" id="workspace">
+    <!-- 左侧控制面板 -->
+    <div class="panel" id="panel">
+      <div class="card" id="card-desc"></div>
+      <div class="card" id="card-controls"></div>
+      <div class="card">
+        <div class="card-title">🎨 几何图元图例</div>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:var(--ellipse-color)"></span> 圆锥曲线 (蓝)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--monge-color)"></span> 蒙日圆/准线 (品红)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--tangent-color)"></span> 垂直切线 (翠绿)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--point-p)"></span> 动点 $P$ (亮红)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--point-ab)"></span> 切点 $A, B$ (紫色)</div>
+          <div class="legend-item"><span class="dot" style="background:var(--line-color)"></span> 题目定直线 $l$ (黄)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧画板区 -->
+    <div class="canvas-container">
+      <!-- 悬浮涂鸦与批注工具条 -->
+      <div class="draw-toolbar" id="draw-toolbar">
+        <button class="tool-btn active" id="tool-freehand" onclick="setDrawTool('freehand')">🖌️ 自由手写</button>
+        <button class="tool-btn" id="tool-line" onclick="setDrawTool('line')">📏 画辅助线</button>
+
+        <div class="color-picker-group">
+          <div class="color-dot active" style="background:#ef4444" onclick="setDrawColor('#ef4444', this)" title="朱红"></div>
+          <div class="color-dot" style="background:#f59e0b" onclick="setDrawColor('#f59e0b', this)" title="明黄"></div>
+          <div class="color-dot" style="background:#10b981" onclick="setDrawColor('#10b981', this)" title="翠绿"></div>
+          <div class="color-dot" style="background:#2563eb" onclick="setDrawColor('#2563eb', this)" title="宝蓝"></div>
+          <div class="color-dot" style="background:#1e293b" onclick="setDrawColor('#1e293b', this)" title="墨黑"></div>
+        </div>
+
+        <button class="tool-btn" onclick="undoAnnotation()">↩️ 撤销</button>
+        <button class="tool-btn" onclick="clearAnnotations()">🗑️ 清屏</button>
+        <button class="tool-btn" style="color:#b91c1c" onclick="toggleDrawMode()">✖ 退出批注</button>
+      </div>
+
+      <canvas id="cvs"></canvas>
+      <div class="canvas-hint" id="canvas-hint">💡 交互提示：支持手指/鼠标直接在画板中拖动红色动点 P</div>
+    </div>
+  </div>
+
+  <script>
+    // --- 全局核心状态 ---
+    let isPanelCollapsed = false;
+    let currentTab = 1;
+    let tab1_subCurve = 'ellipse';
+    let canvas, ctx;
+    let width = 600, height = 560;
+
+    // --- 极速平滑插值状态 (Lerp) ---
+    let currentScale = 48;
+    let targetScale = 48;
+    let currentOriginX = 300;
+    let currentOriginY = 280;
+
+    // --- 电子白板 / 随手批注状态系统 ---
+    let isDrawMode = false;
+    let activeDrawTool = 'freehand'; // 'freehand' 或 'line'
+    let currentDrawColor = '#ef4444';
+    let currentDrawLineWidth = 2.6;
+    // 批注笔记分别按 Tab 记忆存储，换题不丢笔记
+    let tabAnnotations = { 1: [], 2: [], 3: [] };
+    let activeStroke = null;
+
+    // --- Tab 1 参数 ---
+    let tab1_a = 2.8, tab1_b = 1.6;
+    let tab1_hyp_a = 2.6, tab1_hyp_b = 1.6;
+    let tab1_p = 2.0;
+    let tab1_angle = Math.PI / 4;
+    let tab1_para_y = 1.2;
+    let tab1_showFullCircle = false;
+    let tab1_isTracing = false;
+    let tab1_tracedPoints = [];
+
+    // --- Tab 2/3 参数 ---
+    let tab2_m = 4.0;
+    let tab2_p_t = 0.5;
+    let tab3_b = 0.9;
+    let tab3_p_t = 0.2;
+
+    let isInteracting = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      canvas = document.getElementById('cvs');
+      ctx = canvas.getContext('2d');
+      updateCanvasPhysicalSize();
+      window.addEventListener('resize', updateCanvasPhysicalSize);
+
+      initInteraction();
+      renderUI();
+      requestAnimationFrame(mainLoop);
+    });
+
+    function updateCanvasPhysicalSize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      width = rect.width;
+      height = 560;
+      canvas.width = width * window.devicePixelRatio;
+      canvas.height = height * window.devicePixelRatio;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+
+    function toggleLeftPanel() {
+      isPanelCollapsed = !isPanelCollapsed;
+      const ws = document.getElementById('workspace');
+      const btn = document.getElementById('main-toggle-btn');
+
+      if (isPanelCollapsed) {
+        ws.classList.add('panel-collapsed');
+        btn.innerHTML = '▶ 展开面板';
+      } else {
+        ws.classList.remove('panel-collapsed');
+        btn.innerHTML = '◀ 收起面板 (顶端放大居中)';
+      }
+    }
+
+    // --- 批注模式切换 ---
+    function toggleDrawMode() {
+      isDrawMode = !isDrawMode;
+      const drawBtn = document.getElementById('draw-mode-btn');
+      const toolbar = document.getElementById('draw-toolbar');
+      const hint = document.getElementById('canvas-hint');
+
+      if (isDrawMode) {
+        drawBtn.classList.add('active');
+        drawBtn.innerHTML = '✖ 正在批注 (点击退出)';
+        toolbar.classList.add('show');
+        canvas.style.cursor = 'crosshair';
+        hint.innerHTML = '✍️ 当前处于板书批注模式：手指或鼠标在画板上可自由写字、涂鸦或拉辅助线';
+      } else {
+        drawBtn.classList.remove('active');
+        drawBtn.innerHTML = '🖍️ 开启板书批注 (涂鸦/画线)';
+        toolbar.classList.remove('show');
+        canvas.style.cursor = 'default';
+        hint.innerHTML = '💡 交互提示：支持手指/鼠标直接在画板中拖动红色动点 P';
+      }
+    }
+
+    function setDrawTool(tool) {
+      activeDrawTool = tool;
+      document.getElementById('tool-freehand').classList.toggle('active', tool === 'freehand');
+      document.getElementById('tool-line').classList.toggle('active', tool === 'line');
+    }
+
+    function setDrawColor(color, el) {
+      currentDrawColor = color;
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function undoAnnotation() {
+      if (tabAnnotations[currentTab].length > 0) {
+        tabAnnotations[currentTab].pop();
+      }
+    }
+
+    function clearAnnotations() {
+      tabAnnotations[currentTab] = [];
+    }
+
+    function switchTab(index) {
+      currentTab = index;
+      tab1_isTracing = false;
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', idx + 1 === index);
+      });
+      renderUI();
+    }
+
+    function switchSubCurve(type) {
+      tab1_subCurve = type;
+      tab1_isTracing = false;
+      tab1_tracedPoints = [];
+      renderUI();
+    }
+
+    function triggerMathRender() {
+      if (window.renderMathInElement) {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    // --- UI 控制卡片生成 ---
+    function renderUI() {
+      const descCard = document.getElementById('card-desc');
+      const ctrlCard = document.getElementById('card-controls');
+
+      if (currentTab === 1) {
+        let curveNav = `
+          <div class="sub-curve-bar">
+            <button class="sub-btn ${tab1_subCurve === 'ellipse' ? 'active' : ''}" onclick="switchSubCurve('ellipse')">① 椭圆</button>
+            <button class="sub-btn ${tab1_subCurve === 'hyperbola' ? 'active' : ''}" onclick="switchSubCurve('hyperbola')">② 双曲线</button>
+            <button class="sub-btn ${tab1_subCurve === 'parabola' ? 'active' : ''}" onclick="switchSubCurve('parabola')">③ 抛物线</button>
+          </div>
+        `;
+
+        if (tab1_subCurve === 'ellipse') {
+          descCard.innerHTML = `
+            ${curveNav}
+            <div class="card-title">📖 椭圆的蒙日圆 (准圆)</div>
+            <div class="math-info">
+              椭圆 $\\frac{x^2}{a^2}+\\frac{y^2}{b^2}=1$ 的两条<b>互相垂直切线</b>的交点 $P$ 的轨迹是同心圆：<br>
+              <span class="math-tag">方程：$x^2 + y^2 = a^2 + b^2$</span>
+            </div>
+          `;
+          ctrlCard.innerHTML = `
+            <div class="card-title">⚙️ 椭圆控制</div>
+            <div class="control-row">
+              <label>长半轴 $a$: <b>${tab1_a.toFixed(1)}</b></label>
+              <input type="range" min="2.0" max="3.8" step="0.1" value="${tab1_a}" oninput="tab1_a=parseFloat(this.value);tab1_tracedPoints=[];renderUI();">
+            </div>
+            <div class="control-row">
+              <label>短半轴 $b$: <b>${tab1_b.toFixed(1)}</b></label>
+              <input type="range" min="1.0" max="2.4" step="0.1" value="${tab1_b}" oninput="tab1_b=parseFloat(this.value);tab1_tracedPoints=[];renderUI();">
+            </div>
+            <div class="control-row">
+              <label>动点 $P$ 位置角: <b>${(tab1_angle * 180 / Math.PI).toFixed(0)}°</b></label>
+              <input type="range" min="0" max="360" step="1" value="${tab1_angle * 180 / Math.PI}" oninput="tab1_angle=parseFloat(this.value)*Math.PI/180;renderUI();">
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="tab1_isTracing=!tab1_isTracing;renderUI();">${tab1_isTracing ? '⏸️ 暂停描画' : '🖋️ 慢速笔迹描画'}</button>
+              <button class="btn btn-outline" onclick="tab1_showFullCircle=!tab1_showFullCircle;renderUI();">${tab1_showFullCircle ? '隐藏圆' : '✨ 显示完整圆'}</button>
+              <button class="btn btn-outline" onclick="tab1_tracedPoints=[];">清空描痕</button>
+            </div>
+          `;
+        } else if (tab1_subCurve === 'hyperbola') {
+          descCard.innerHTML = `
+            ${curveNav}
+            <div class="card-title">📖 双曲线的蒙日圆 ($a>b$)</div>
+            <div class="math-info">
+              双曲线 $\\frac{x^2}{a^2}-\\frac{y^2}{b^2}=1$ 的垂切交点轨迹为同心圆：<br>
+              <span class="math-tag">方程：$x^2 + y^2 = a^2 - b^2$</span><br>
+              <b>几何严格特征</b>：动点 $P$ 引出的两切线<b>分别相切于双曲线的左支与右支</b>（紫色点 $A, B$），夹角严格为 $90^\\circ$！
+            </div>
+          `;
+          ctrlCard.innerHTML = `
+            <div class="card-title">⚙️ 双曲线控制</div>
+            <div class="control-row">
+              <label>实半轴 $a$: <b>${tab1_hyp_a.toFixed(1)}</b></label>
+              <input type="range" min="2.0" max="3.4" step="0.1" value="${tab1_hyp_a}" oninput="tab1_hyp_a=parseFloat(this.value);if(tab1_hyp_a<=tab1_hyp_b) tab1_hyp_b=tab1_hyp_a-0.2;tab1_tracedPoints=[];renderUI();">
+            </div>
+            <div class="control-row">
+              <label>虚半轴 $b$: <b>${tab1_hyp_b.toFixed(1)}</b> (须 $b < a$)</label>
+              <input type="range" min="0.8" max="2.6" step="0.1" value="${tab1_hyp_b}" oninput="tab1_hyp_b=parseFloat(this.value);if(tab1_hyp_b>=tab1_hyp_a) tab1_hyp_a=tab1_hyp_b+0.2;tab1_tracedPoints=[];renderUI();">
+            </div>
+            <div class="control-row">
+              <label>动点 $P$ 位置角: <b>${(tab1_angle * 180 / Math.PI).toFixed(0)}°</b></label>
+              <input type="range" min="0" max="360" step="1" value="${tab1_angle * 180 / Math.PI}" oninput="tab1_angle=parseFloat(this.value)*Math.PI/180;renderUI();">
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="tab1_isTracing=!tab1_isTracing;renderUI();">${tab1_isTracing ? '⏸️ 暂停描画' : '🖋️ 慢速笔迹描画'}</button>
+              <button class="btn btn-outline" onclick="tab1_showFullCircle=!tab1_showFullCircle;renderUI();">${tab1_showFullCircle ? '隐藏圆' : '✨ 显示完整圆'}</button>
+              <button class="btn btn-outline" onclick="tab1_tracedPoints=[];">清空描痕</button>
+            </div>
+          `;
+        } else if (tab1_subCurve === 'parabola') {
+          descCard.innerHTML = `
+            ${curveNav}
+            <div class="card-title">📖 抛物线蒙日圆 $\\implies$ 准线定理</div>
+            <div class="math-info">
+              抛物线 $y^2=2px$ 的垂切交点轨迹退化为一条直线，它恰好就是其<b>准线</b>！<br>
+              <span class="math-tag">准线方程：$x = -\\frac{p}{2}$</span><br>
+              从准线上任意一点引两条切线，两切线恒相互垂直。
+            </div>
+          `;
+          ctrlCard.innerHTML = `
+            <div class="card-title">⚙️ 抛物线控制</div>
+            <div class="control-row">
+              <label>焦准距 $p$: <b>${tab1_p.toFixed(1)}</b> (准线 $x=-${(tab1_p/2).toFixed(2)}$)</label>
+              <input type="range" min="1.0" max="3.5" step="0.2" value="${tab1_p}" oninput="tab1_p=parseFloat(this.value);tab1_tracedPoints=[];renderUI();">
+            </div>
+            <div class="control-row">
+              <label>动点 $P$ 纵坐标: <b>${tab1_para_y.toFixed(2)}</b></label>
+              <input type="range" min="-3.5" max="3.5" step="0.1" value="${tab1_para_y}" oninput="tab1_para_y=parseFloat(this.value);renderUI();">
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="tab1_isTracing=!tab1_isTracing;renderUI();">${tab1_isTracing ? '⏸️ 暂停描画' : '🖋️ 慢速描准线'}</button>
+              <button class="btn btn-outline" onclick="tab1_showFullCircle=!tab1_showFullCircle;renderUI();">${tab1_showFullCircle ? '隐藏准线' : '✨ 显示完整准线'}</button>
+              <button class="btn btn-outline" onclick="tab1_tracedPoints=[];">清空描痕</button>
+            </div>
+          `;
+        }
+      } else if (currentTab === 2) {
+        const d = 2.0;
+        const R = Math.sqrt(tab2_m + 1);
+        const isIntersect = R > d;
+        const e = Math.sqrt((tab2_m - 1) / tab2_m);
+
+        descCard.innerHTML = `
+          <div class="card-title">🔍 调研考题解析：存在钝角 (图片2)</div>
+          <div class="math-info">
+            <b>题目：</b>椭圆 $E:\\frac{x^2}{m}+y^2=1 (m>1)$，动点 $P$ 在直线 $\\sqrt{3}x-y-4=0$ 上。若<b>存在</b> $\\angle APB$ 为钝角，求离心率 $e$ 的范围。
+            <br><b>几何本质与秒杀心法：</b>
+            1. 动点 $P$ 引切线张角在蒙日圆内部大于 $90^\\circ$；<br>
+            2. “存在钝角” $\\iff$ <b>直线穿入蒙日圆内部 (相交)</b>。<br>
+            距离 $d = \\frac{|-4|}{\\sqrt{3+1}} = 2$，蒙日圆半径 $R = \\sqrt{m+1}$。<br>
+            由相交得 $R > 2 \\implies m+1 > 4 \\implies m > 3$。<br>
+            $\\therefore e = \\sqrt{1-\\frac{1}{m}} \\in \\left(\\frac{\\sqrt{6}}{3}, 1\\right)$。<br>
+            <span class="badge-status ${isIntersect ? 'status-ok' : 'status-alert'}">
+              ${isIntersect ? `当前状态：相交 (存在钝角) | 正确选项：B` : `当前状态：相离 (无钝角) | 不符题意`}
+            </span>
+          </div>
+        `;
+
+        ctrlCard.innerHTML = `
+          <div class="card-title">⚙️ 参数互动</div>
+          <div class="control-row">
+            <label>参数 $m$: <b>${tab2_m.toFixed(2)}</b></label>
+            <input type="range" min="1.2" max="6.5" step="0.1" value="${tab2_m}" oninput="tab2_m=parseFloat(this.value);renderUI();">
+          </div>
+          <div class="control-row">
+            <label>半径 $R=\\sqrt{m+1}$: <b>${R.toFixed(2)}</b> (圆心距 $d=2.0$)</label>
+          </div>
+          <div class="control-row">
+            <label>离心率 $e$: <b>${e.toFixed(3)}</b></label>
+          </div>
+          <div class="control-row">
+            <label>沿直线移动点 $P$</label>
+            <input type="range" min="-1.5" max="2.5" step="0.05" value="${tab2_p_t}" oninput="tab2_p_t=parseFloat(this.value);">
+          </div>
+        `;
+      } else if (currentTab === 3) {
+        const a2 = 3.0;
+        const d = 2.0;
+        const R = Math.sqrt(a2 + tab3_b * tab3_b);
+        const isDisjoint = R <= d + 1e-4;
+        const e = Math.sqrt((a2 - tab3_b * tab3_b) / a2);
+
+        descCard.innerHTML = `
+          <div class="card-title">🎯 深外例题解析：恒为锐角 (图片3)</div>
+          <div class="math-info">
+            <b>题目：</b>椭圆 $\\frac{x^2}{3}+\\frac{y^2}{b^2}=1 (0<b<\\sqrt{3})$，动点 $P$ 在直线 $4x+3y-10=0$ 上。若 $\\angle APB$ <b>恒为锐角</b>，求离心率 $e$ 范围。
+            <br><b>几何本质与秒杀心法：</b>
+            1. $\\angle APB$ 恒为锐角 $\\iff$ 动点 $P$ 必须<b>恒在蒙日圆外部</b>；<br>
+            2. 定直线与蒙日圆<b>相离或相切</b>；<br>
+            距离 $d = \\frac{10}{\\sqrt{4^2+3^2}} = 2$，半径 $R = \\sqrt{3+b^2}$。<br>
+            相离条件：$R \\le 2 \\implies 3+b^2 \\le 4 \\implies b \\in (0, 1]$。<br>
+            $\\therefore e = \\sqrt{\\frac{3-b^2}{3}} \\in \\left[\\frac{\\sqrt{6}}{3}, 1\\right)$。<br>
+            <span class="badge-status ${isDisjoint ? 'status-ok' : 'status-alert'}">
+              ${isDisjoint ? `当前状态：相离/相切 (恒为锐角成立)` : `当前状态：相交 (存在直角或钝角)`}
+            </span>
+          </div>
+        `;
+
+        ctrlCard.innerHTML = `
+          <div class="card-title">⚙️ 参数互动</div>
+          <div class="control-row">
+            <label>短半轴 $b$: <b>${tab3_b.toFixed(2)}</b> (上限 $\\sqrt{3}\\approx 1.73$)</label>
+            <input type="range" min="0.3" max="1.7" step="0.05" value="${tab3_b}" oninput="tab3_b=parseFloat(this.value);renderUI();">
+          </div>
+          <div class="control-row">
+            <label>半径 $R=\\sqrt{3+b^2}$: <b>${R.toFixed(2)}</b> (圆心距 $d=2.0$)</label>
+          </div>
+          <div class="control-row">
+            <label>离心率 $e$: <b>${e.toFixed(3)}</b></label>
+          </div>
+          <div class="control-row">
+            <label>沿直线移动点 $P$</label>
+            <input type="range" min="-1.5" max="2.5" step="0.05" value="${tab3_p_t}" oninput="tab3_p_t=parseFloat(this.value);">
+          </div>
+        `;
+      }
+
+      triggerMathRender();
+    }
+
+    function recordTracePoint() {
+      if (currentTab !== 1) return;
+      if (tab1_subCurve === 'ellipse') {
+        const R = Math.sqrt(tab1_a * tab1_a + tab1_b * tab1_b);
+        tab1_tracedPoints.push({ x: R * Math.cos(tab1_angle), y: R * Math.sin(tab1_angle) });
+      } else if (tab1_subCurve === 'hyperbola') {
+        const R = Math.sqrt(tab1_hyp_a * tab1_hyp_a - tab1_hyp_b * tab1_hyp_b);
+        tab1_tracedPoints.push({ x: R * Math.cos(tab1_angle), y: R * Math.sin(tab1_angle) });
+      } else if (tab1_subCurve === 'parabola') {
+        tab1_tracedPoints.push({ x: -tab1_p / 2, y: tab1_para_y });
+      }
+      if (tab1_tracedPoints.length > 700) tab1_tracedPoints.shift();
+    }
+
+    // --- 触控与鼠标事件分发 (完美结合动点移动与白板批注) ---
+    function initInteraction() {
+      const getMathCoords = (clientX, clientY) => {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (clientX - rect.left - currentOriginX) / currentScale,
+          y: -(clientY - rect.top - currentOriginY) / currentScale
+        };
+      };
+
+      const handleStart = (clientX, clientY) => {
+        isInteracting = true;
+        const m = getMathCoords(clientX, clientY);
+
+        if (isDrawMode) {
+          // 批注模式：开始一条新笔迹 (自由曲线或直线)
+          activeStroke = {
+            type: activeDrawTool,
+            color: currentDrawColor,
+            width: currentDrawLineWidth,
+            points: [m]
+          };
+        } else {
+          // 常规几何模式：拖动动点 P
+          updateGeometryP(m);
+        }
+      };
+
+      const handleMove = (clientX, clientY) => {
+        if (!isInteracting) return;
+        const m = getMathCoords(clientX, clientY);
+
+        if (isDrawMode) {
+          if (!activeStroke) return;
+          if (activeStroke.type === 'freehand') {
+            activeStroke.points.push(m);
+          } else if (activeStroke.type === 'line') {
+            // 直线模式始终更新终点
+            if (activeStroke.points.length === 1) activeStroke.points.push(m);
+            else activeStroke.points[1] = m;
+          }
+        } else {
+          updateGeometryP(m);
+        }
+      };
+
+      const handleEnd = () => {
+        if (isDrawMode && activeStroke) {
+          tabAnnotations[currentTab].push(activeStroke);
+          activeStroke = null;
+        }
+        isInteracting = false;
+      };
+
+      const updateGeometryP = (m) => {
+        if (currentTab === 1) {
+          if (tab1_subCurve === 'parabola') {
+            tab1_para_y = Math.max(-4.5, Math.min(4.5, m.y));
+          } else {
+            tab1_angle = Math.atan2(m.y, m.x);
+            if (tab1_angle < 0) tab1_angle += Math.PI * 2;
+          }
+        } else if (currentTab === 2) {
+          const k = Math.sqrt(3);
+          const x0 = (m.x + k * m.y + 4 * k) / (1 + k * k);
+          tab2_p_t = (x0 - 2.0 / Math.sqrt(3)) / 2;
+        } else if (currentTab === 3) {
+          const A = 4, B = 3, C = -10;
+          const x0 = (B * (B * m.x - A * m.y) - A * C) / (A * A + B * B);
+          tab3_p_t = (x0 - 1.6) / 2;
+        }
+      };
+
+      // 桌面鼠标事件
+      canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', handleEnd);
+
+      // 平板触控事件 (阻断滚屏，体验极致丝滑)
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          e.preventDefault();
+          handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (isInteracting && e.touches.length > 0) {
+          e.preventDefault();
+          handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: false });
+
+      window.addEventListener('touchend', handleEnd);
+      window.addEventListener('touchcancel', handleEnd);
+    }
+
+    function toScreen(x, y) {
+      return { x: currentOriginX + x * currentScale, y: currentOriginY - y * currentScale };
+    }
+
+    // --- 绘制批注笔记 (锚定数学坐标系，随缩放完美自适应放大) ---
+    function renderAnnotations() {
+      ctx.save();
+      const currentList = tabAnnotations[currentTab] || [];
+
+      const renderSingleStroke = (stroke) => {
+        if (!stroke || stroke.points.length === 0) return;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        if (stroke.type === 'freehand') {
+          for (let i = 0; i < stroke.points.length; i++) {
+            const s = toScreen(stroke.points[i].x, stroke.points[i].y);
+            if (i === 0) ctx.moveTo(s.x, s.y);
+            else ctx.lineTo(s.x, s.y);
+          }
+          ctx.stroke();
+        } else if (stroke.type === 'line' && stroke.points.length >= 2) {
+          const p1 = toScreen(stroke.points[0].x, stroke.points[0].y);
+          const p2 = toScreen(stroke.points[stroke.points.length - 1].x, stroke.points[stroke.points.length - 1].y);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      };
+
+      for (const s of currentList) {
+        renderSingleStroke(s);
+      }
+      if (activeStroke) {
+        renderSingleStroke(activeStroke);
+      }
+      ctx.restore();
+    }
+
+    // --- 动画主帧循环 ---
+    function mainLoop() {
+      const containerRect = canvas.parentElement.getBoundingClientRect();
+      if (Math.abs(width - containerRect.width) > 0.5) {
+        updateCanvasPhysicalSize();
+      }
+
+      if (isPanelCollapsed) {
+        targetScale = Math.min(width / 13.5, height / 8.8);
+      } else {
+        targetScale = 48;
+      }
+
+      const easeSpeed = 0.12;
+      currentScale += (targetScale - currentScale) * easeSpeed;
+      
+      const targetOriginX = width / 2;
+      const targetOriginY = height / 2;
+      currentOriginX += (targetOriginX - currentOriginX) * easeSpeed;
+      currentOriginY += (targetOriginY - currentOriginY) * easeSpeed;
+
+      if (currentTab === 1 && tab1_isTracing) {
+        if (tab1_subCurve === 'parabola') {
+          tab1_para_y += 0.04;
+          if (tab1_para_y > 4) tab1_para_y = -4;
+        } else {
+          tab1_angle += 0.02;
+          if (tab1_angle > Math.PI * 2) tab1_angle -= Math.PI * 2;
+        }
+        recordTracePoint();
+      }
+
+      ctx.clearRect(0, 0, width, height);
+      drawGrid();
+
+      if (currentTab === 1) drawTab1();
+      else if (currentTab === 2) drawTab2();
+      else if (currentTab === 3) drawTab3();
+
+      // 在几何图之上渲染用户手写板书/批注
+      renderAnnotations();
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    // --- 网格与坐标系 ---
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = '#ebf4ed';
+      ctx.lineWidth = 1;
+
+      const xc = Math.ceil(width / currentScale / 2) + 2;
+      const yc = Math.ceil(height / currentScale / 2) + 2;
+
+      for (let i = -xc; i <= xc; i++) {
+        const p1 = toScreen(i, -yc), p2 = toScreen(i, yc);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      }
+      for (let j = -yc; j <= yc; j++) {
+        const p1 = toScreen(-xc, j), p2 = toScreen(xc, j);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(0, currentOriginY); ctx.lineTo(width, currentOriginY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(currentOriginX, 0); ctx.lineTo(currentOriginX, height); ctx.stroke();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.font = 'italic 16px "Times New Roman", serif';
+      ctx.fillText('x', width - 20, currentOriginY - 8);
+      ctx.fillText('y', currentOriginX + 8, 20);
+      ctx.fillText('O', currentOriginX - 16, currentOriginY + 18);
+      ctx.restore();
+    }
+
+    // ==========================================
+    // Tab 1：三大曲线绘制
+    // ==========================================
+    function drawTab1() {
+      if (tab1_subCurve === 'ellipse') {
+        const a = tab1_a, b = tab1_b;
+        const R = Math.sqrt(a * a + b * b);
+
+        drawEllipse(a, b, '#1d4ed8', 2.8);
+        if (tab1_showFullCircle) drawCircle(R, 'rgba(219, 39, 119, 0.75)', 2.2, [4, 4]);
+        drawTracedPoints();
+
+        const px = R * Math.cos(tab1_angle);
+        const py = R * Math.sin(tab1_angle);
+
+        const tangents = getEllipseTangents(a, b, px, py);
+        if (tangents) {
+          const [A, B] = tangents;
+          drawInfiniteLine(px, py, A.x, A.y, '#059669', 2);
+          drawInfiniteLine(px, py, B.x, B.y, '#059669', 2);
+          drawRightAngleSymbol(px, py, A.x, A.y, B.x, B.y, '#047857');
+          drawPoint(A.x, A.y, '#7c3aed', 'A');
+          drawPoint(B.x, B.y, '#7c3aed', 'B');
+        }
+        drawPoint(px, py, '#dc2626', 'P', true);
+
+      } else if (tab1_subCurve === 'hyperbola') {
+        const a = tab1_hyp_a, b = tab1_hyp_b;
+        const R = Math.sqrt(a * a - b * b);
+
+        drawHyperbola(a, b, '#1d4ed8', 2.6);
+        if (tab1_showFullCircle) drawCircle(R, 'rgba(219, 39, 119, 0.75)', 2.2, [4, 4]);
+        drawTracedPoints();
+
+        const px = R * Math.cos(tab1_angle);
+        const py = R * Math.sin(tab1_angle);
+
+        const tangents = getHyperbolaTangents(a, b, px, py);
+        if (tangents) {
+          const [A, B] = tangents;
+          drawInfiniteLine(px, py, A.x, A.y, '#059669', 2);
+          drawInfiniteLine(px, py, B.x, B.y, '#059669', 2);
+          drawRightAngleSymbol(px, py, A.x, A.y, B.x, B.y, '#047857');
+          drawPoint(A.x, A.y, '#7c3aed', 'A');
+          drawPoint(B.x, B.y, '#7c3aed', 'B');
+        }
+        drawPoint(px, py, '#dc2626', 'P', true);
+
+      } else if (tab1_subCurve === 'parabola') {
+        const p = tab1_p;
+        drawParabola(p, '#1d4ed8', 2.8);
+
+        const directrixX = -p / 2;
+        if (tab1_showFullCircle) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(219, 39, 119, 0.75)';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([4, 4]);
+          const p1 = toScreen(directrixX, -10);
+          const p2 = toScreen(directrixX, 10);
+          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+          ctx.restore();
+        }
+
+        drawTracedPoints();
+
+        const px = directrixX;
+        const py = tab1_para_y;
+
+        const tangents = getParabolaTangents(p, px, py);
+        if (tangents) {
+          const [A, B] = tangents;
+          drawInfiniteLine(px, py, A.x, A.y, '#059669', 2);
+          drawInfiniteLine(px, py, B.x, B.y, '#059669', 2);
+          drawRightAngleSymbol(px, py, A.x, A.y, B.x, B.y, '#047857');
+          drawPoint(A.x, A.y, '#7c3aed', 'A');
+          drawPoint(B.x, B.y, '#7c3aed', 'B');
+        }
+        drawPoint(px, py, '#dc2626', 'P', true);
+      }
+    }
+
+    // ==========================================
+    // Tab 2：图片2例题
+    // ==========================================
+    function drawTab2() {
+      const m = tab2_m;
+      const a = Math.sqrt(m);
+      const b = 1.0;
+      const R = Math.sqrt(m + 1);
+
+      drawEllipse(a, b, '#1d4ed8', 2.6);
+      drawCircle(R, '#db2777', 2.2, null);
+
+      const k = Math.sqrt(3);
+      drawLineFunc(x => k * x - 4, '#d97706', 2.4);
+
+      const px = (tab2_p_t * 2) + 2.0 / Math.sqrt(3);
+      const py = k * px - 4;
+
+      const dist = Math.sqrt(px * px + py * py);
+      const isInside = dist < R;
+
+      const tangents = getEllipseTangents(a, b, px, py);
+      if (tangents) {
+        const [A, B] = tangents;
+        drawInfiniteLine(px, py, A.x, A.y, '#059669', 1.8);
+        drawInfiniteLine(px, py, B.x, B.y, '#059669', 1.8);
+        drawPoint(A.x, A.y, '#7c3aed', 'A');
+        drawPoint(B.x, B.y, '#7c3aed', 'B');
+
+        const deg = calculateAngleDeg(px, py, A, B);
+        drawAngleArc(px, py, A, B, deg, isInside ? '#dc2626' : '#059669');
+      }
+
+      drawPoint(px, py, '#dc2626', isInside ? 'P (钝角区)' : 'P (锐角区)', true);
+      drawDistanceSegment(k, -4, 2.0);
+    }
+
+    // ==========================================
+    // Tab 3：图片3例题
+    // ==========================================
+    function drawTab3() {
+      const a = Math.sqrt(3);
+      const b = tab3_b;
+      const R = Math.sqrt(3 + b * b);
+
+      drawEllipse(a, b, '#1d4ed8', 2.6);
+      drawCircle(R, '#db2777', 2.2, null);
+
+      drawLineFunc(x => (10 - 4 * x) / 3, '#d97706', 2.4);
+
+      const px = 1.6 + tab3_p_t * 2;
+      const py = (10 - 4 * px) / 3;
+
+      const tangents = getEllipseTangents(a, b, px, py);
+      if (tangents) {
+        const [A, B] = tangents;
+        drawInfiniteLine(px, py, A.x, A.y, '#059669', 1.8);
+        drawInfiniteLine(px, py, B.x, B.y, '#059669', 1.8);
+        drawPoint(A.x, A.y, '#7c3aed', 'A');
+        drawPoint(B.x, B.y, '#7c3aed', 'B');
+
+        const deg = calculateAngleDeg(px, py, A, B);
+        drawAngleArc(px, py, A, B, deg, deg < 89.9 ? '#059669' : '#dc2626');
+      }
+
+      drawPoint(px, py, '#dc2626', 'P', true);
+      drawDistanceSegment(-4/3, 10/3, 2.0);
+    }
+
+    // --- 高精度解析切线函数 ---
+    function getEllipseTangents(a, b, px, py) {
+      const U = px / a, V = py / b;
+      const D2 = U * U + V * V;
+      if (D2 <= 1.0001) return null;
+      const h = Math.sqrt(D2 - 1) / D2;
+      const mx = U / D2, my = V / D2;
+      const nx = -V * h, ny = U * h;
+      return [
+        { x: a * (mx + nx), y: b * (my + ny) },
+        { x: a * (mx - nx), y: b * (my - ny) }
+      ];
+    }
+
+    function getHyperbolaTangents(a, b, px, py) {
+      const A = px * px - a * a;
+      const B = -2 * px * py;
+      const C = py * py + b * b;
+      const delta = B * B - 4 * A * C;
+      if (delta < 0 || Math.abs(A) < 1e-6) return null;
+
+      const k1 = (-B + Math.sqrt(delta)) / (2 * A);
+      const k2 = (-B - Math.sqrt(delta)) / (2 * A);
+
+      const pt1 = getHyperbolaContact(a, b, px, py, k1);
+      const pt2 = getHyperbolaContact(a, b, px, py, k2);
+      return [pt1, pt2];
+    }
+
+    function getHyperbolaContact(a, b, px, py, k) {
+      const m = py - k * px;
+      const denom = b * b - a * a * k * k;
+      const xc = (a * a * k * m) / denom;
+      const yc = (b * b * m) / denom;
+      return { x: xc, y: yc };
+    }
+
+    function getParabolaTangents(p, px, py) {
+      const delta = 4 * py * py + 4 * p * p;
+      const y1 = (2 * py + Math.sqrt(delta)) / 2;
+      const y2 = (2 * py - Math.sqrt(delta)) / 2;
+      return [
+        { x: (y1 * y1) / (2 * p), y: y1 },
+        { x: (y2 * y2) / (2 * p), y: y2 }
+      ];
+    }
+
+    // --- 几何绘图支持 ---
+    function drawEllipse(a, b, color, lw) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.ellipse(currentOriginX, currentOriginY, a * currentScale, b * currentScale, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawHyperbola(a, b, color, lw) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.2;
+      const asyX = 8;
+      const asyY = (b / a) * asyX;
+      let p1 = toScreen(-asyX, -asyY), p2 = toScreen(asyX, asyY);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      p1 = toScreen(-asyX, asyY); p2 = toScreen(asyX, -asyY);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      ctx.restore();
+
+      const tMax = 1.85;
+      ctx.beginPath();
+      for (let t = -tMax; t <= tMax; t += 0.04) {
+        const x = a * Math.cosh(t), y = b * Math.sinh(t);
+        const s = toScreen(x, y);
+        if (t === -tMax) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      for (let t = -tMax; t <= tMax; t += 0.04) {
+        const x = -a * Math.cosh(t), y = b * Math.sinh(t);
+        const s = toScreen(x, y);
+        if (t === -tMax) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawParabola(p, color, lw) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      const yMax = 5.5;
+      for (let y = -yMax; y <= yMax; y += 0.08) {
+        const x = (y * y) / (2 * p);
+        const s = toScreen(x, y);
+        if (y === -yMax) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawCircle(r, color, lw, dash = null) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+      if (dash) ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.arc(currentOriginX, currentOriginY, r * currentScale, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTracedPoints() {
+      if (tab1_tracedPoints.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = '#db2777';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      for (let i = 0; i < tab1_tracedPoints.length; i++) {
+        const s = toScreen(tab1_tracedPoints[i].x, tab1_tracedPoints[i].y);
+        if (i === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawPoint(x, y, color, label = '', isLarge = false) {
+      const s = toScreen(x, y);
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, isLarge ? 8 : 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (label) {
+        ctx.fillStyle = color;
+        ctx.font = 'bold 15px "Times New Roman", serif';
+        ctx.fillText(label, s.x + 8, s.y - 8);
+      }
+      ctx.restore();
+    }
+
+    function drawInfiniteLine(x1, y1, x2, y2, color, lw) {
+      const dx = x2 - x1, dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      if (len < 1e-4) return;
+      const ext = 16;
+      const pA = toScreen(x1 - (dx / len) * ext, y1 - (dy / len) * ext);
+      const pB = toScreen(x1 + (dx / len) * ext, y1 + (dy / len) * ext);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawLineFunc(fn, color, lw) {
+      const p1 = toScreen(-10, fn(-10));
+      const p2 = toScreen(10, fn(10));
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawRightAngleSymbol(px, py, ax, ay, bx, by, color) {
+      const v1 = { x: ax - px, y: ay - py };
+      const v2 = { x: bx - px, y: by - py };
+      const l1 = Math.hypot(v1.x, v1.y), l2 = Math.hypot(v2.x, v2.y);
+      if (l1 < 1e-4 || l2 < 1e-4) return;
+      const sz = 0.35;
+      const u1 = { x: (v1.x / l1) * sz, y: (v1.y / l1) * sz };
+      const u2 = { x: (v2.x / l2) * sz, y: (v2.y / l2) * sz };
+
+      const c1 = toScreen(px + u1.x, py + u1.y);
+      const c2 = toScreen(px + u1.x + u2.x, py + u1.y + u2.y);
+      const c3 = toScreen(px + u2.x, py + u2.y);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.lineTo(c3.x, c3.y); ctx.stroke();
+      ctx.restore();
+    }
+
+    function calculateAngleDeg(px, py, A, B) {
+      const v1 = { x: A.x - px, y: A.y - py };
+      const v2 = { x: B.x - px, y: B.y - py };
+      const dot = v1.x * v2.x + v1.y * v2.y;
+      const l1 = Math.hypot(v1.x, v1.y), l2 = Math.hypot(v2.x, v2.y);
+      const cosVal = Math.max(-1, Math.min(1, dot / (l1 * l2)));
+      return (Math.acos(cosVal) * 180) / Math.PI;
+    }
+
+    function drawAngleArc(px, py, A, B, deg, color) {
+      const s = toScreen(px, py);
+      const ang1 = Math.atan2(-(A.y - py), A.x - px);
+      const ang2 = Math.atan2(-(B.y - py), B.x - px);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 22, Math.min(ang1, ang2), Math.max(ang1, ang2));
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 13px "Times New Roman", serif';
+      ctx.fillText(`${deg.toFixed(1)}°`, s.x - 22, s.y - 28);
+      ctx.restore();
+    }
+
+    function drawDistanceSegment(k, b, d) {
+      const footX = -k * b / (k * k + 1);
+      const footY = b / (k * k + 1);
+      const o = toScreen(0, 0);
+      const f = toScreen(footX, footY);
+
+      ctx.save();
+      ctx.strokeStyle = '#64748b';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(f.x, f.y); ctx.stroke();
+
+      ctx.fillStyle = '#475569';
+      ctx.font = '13px "Times New Roman", serif';
+      ctx.fillText(`d=${d.toFixed(1)}`, (o.x + f.x) / 2 + 6, (o.y + f.y) / 2 - 6);
+      ctx.restore();
+    }
+  </script>
+</body>
+</html>
