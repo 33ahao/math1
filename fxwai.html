@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>高中数学基本函数 · 图书馆3D课本与丝滑动态数学变换系统</title>
+
+  <!-- 稳定版 Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #1b5e39;
+      --primary-hover: #268752;
+      --bg-green-light: #f2f9f4;
+      --panel-border: #bcd9c6;
+    }
+    * { 
+      box-sizing: border-box; margin: 0; padding: 0; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: "KaiTi", "楷体", "STKaiti", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #14110e;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #app { width: 100%; height: 100%; position: relative; }
+    canvas.webgl { 
+      width: 100%; height: 100%; display: block; 
+      touch-action: none;
+    }
+
+    /* 2D 半透明视窗浮层 */
+    .overlay-mask {
+      position: absolute; inset: 0; z-index: 50;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(220, 235, 226, 0.45);
+      backdrop-filter: blur(8px);
+      padding: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .overlay-mask.active { opacity: 1; }
+
+    .panel-2d {
+      width: min(1140px, 95vw);
+      height: min(760px, 92vh);
+      background: rgba(244, 251, 246, 0.96);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(10, 30, 18, 0.35);
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      grid-template-columns: 1fr 320px;
+      grid-template-areas:
+        "header header"
+        "canvas controls";
+      overflow: hidden;
+      opacity: 0; transform: scale(0.92);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .panel-2d.show { opacity: 1; transform: scale(1); }
+
+    .panel-header {
+      grid-area: header; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; border-bottom: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.65);
+    }
+    .panel-title {
+      font-size: 18px; font-weight: 700; color: var(--primary);
+      font-family: "KaiTi", "楷体", serif;
+    }
+    .close-btn {
+      padding: 8px 18px; border-radius: 8px; border: 1px solid var(--panel-border);
+      background: #fff; color: var(--primary); font-weight: 600; font-size: 14px;
+      cursor: pointer; transition: all 0.2s;
+      font-family: "KaiTi", "楷体", serif;
+    }
+    .close-btn:active { background: var(--primary); color: #fff; }
+
+    /* 2D 绘图区 */
+    .canvas-wrap {
+      grid-area: canvas; position: relative; padding: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #plotCanvas {
+      width: 100%; height: 100%;
+      background: var(--bg-green-light);
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      touch-action: none;
+    }
+
+    /* 左上角规范数学解析式卡片 */
+    .formula-hud {
+      position: absolute; top: 22px; left: 22px; z-index: 10;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border: 1px solid #a3cfb4;
+      border-left: 4px solid var(--primary);
+      padding: 8px 16px; border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(27, 94, 57, 0.12);
+      display: inline-flex; flex-direction: column; gap: 4px;
+      pointer-events: auto;
+      max-width: 65%;
+    }
+
+    .formula-top-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    }
+
+    .formula-badge-label {
+      font-size: 11px; font-weight: bold; color: #3b634b;
+      font-family: "KaiTi", "楷体", serif; letter-spacing: 0.5px;
+    }
+
+    /* 显隐图像切换按钮 */
+    .toggle-plot-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 6px;
+      border: 1px solid #9dcbb0;
+      background: #eef7f1; color: var(--primary);
+      font-size: 11px; font-family: "KaiTi", "楷体", serif; font-weight: bold;
+      cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none; touch-action: manipulation;
+    }
+    .toggle-plot-btn:active {
+      transform: scale(0.95);
+      background: var(--primary); color: #fff;
+    }
+    .toggle-plot-btn.hidden-mode {
+      background: #fff2ef; border-color: #f7a294; color: #c9341c;
+      box-shadow: 0 0 8px rgba(201, 52, 28, 0.2);
+    }
+
+    .formula-content {
+      font-family: "Cambria Math", "Times New Roman", STIXGeneral, serif;
+      font-size: 28px; color: #051b11;
+      display: inline-block;
+      white-space: nowrap; overflow-x: auto;
+      line-height: 1.5;
+    }
+    .formula-content i { font-style: italic; padding: 0 1px; }
+
+    /* 对数与指数精准排版 */
+    .math-log-block { display: inline-block; position: relative; vertical-align: baseline; }
+    .math-op-log { font-style: normal; font-family: "Times New Roman", serif; padding-right: 1px; }
+    .math-log-base {
+      font-size: 0.55em; position: relative; top: 0.38em; left: 1px;
+      margin-right: 3px; line-height: 0; font-style: normal; vertical-align: baseline;
+    }
+    .math-log-arg { display: inline-block; vertical-align: baseline; }
+    .math-exp-block { display: inline-block; position: relative; vertical-align: baseline; }
+    .math-exp-pow {
+      font-size: 0.58em; position: relative; top: -0.6em; left: 1px;
+      line-height: 0; font-style: normal; vertical-align: baseline; display: inline-block;
+    }
+    .math-frac {
+      display: inline-flex; flex-direction: column; vertical-align: middle;
+      text-align: center; padding: 0 4px; font-size: 0.85em; line-height: 1.1;
+    }
+    .math-frac .num { border-bottom: 2px solid #000; padding: 0 2px 2px 2px; }
+    .math-frac .den { padding: 2px 2px 0 2px; }
+    .math-abs { font-size: 1.25em; font-weight: 300; vertical-align: -0.06em; padding: 0 2px; font-family: sans-serif; }
+
+    /* 右上角图例与说明 */
+    .legend-hud {
+      position: absolute; top: 22px; right: 22px; z-index: 5;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--panel-border);
+      padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; display: flex; flex-direction: column; gap: 5px;
+      pointer-events: none; font-family: "KaiTi", "楷体", serif;
+      transition: opacity 0.3s;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; color: #222; }
+    .legend-line { width: 22px; height: 0; }
+    .legend-dashed { border-top: 2px dashed #4e7a61; }
+    .legend-solid { border-top: 2.6px solid #000000; }
+
+    .canvas-tip {
+      position: absolute; bottom: 18px; left: 22px; font-size: 11px; color: #375b44;
+      background: rgba(255,255,255,0.85); padding: 3px 8px; border-radius: 5px;
+      font-family: "KaiTi", "楷体", serif; pointer-events: none;
+    }
+
+    /* 右侧控制栏 */
+    .ctrl-wrap {
+      grid-area: controls; padding: 18px; overflow-y: auto;
+      border-left: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.45);
+      display: flex; flex-direction: column; gap: 14px; font-size: 13px;
+    }
+    .group-title {
+      font-size: 14px; font-weight: 700; color: #1e4730;
+      border-left: 3px solid var(--primary); padding-left: 8px;
+      font-family: "KaiTi", "楷体", serif;
+    }
+    .ctrl-box { display: flex; flex-direction: column; gap: 8px; }
+    .item-row { display: flex; justify-content: space-between; align-items: center; font-family: "KaiTi", "楷体", serif; font-size: 14px; }
+    .ctrl-box input[type="range"] { accent-color: var(--primary); width: 100%; height: 26px; cursor: pointer; }
+    .ctrl-box input[type="number"] {
+      width: 70px; padding: 5px 6px; border: 1px solid var(--panel-border);
+      border-radius: 6px; text-align: center; background: #fff;
+      font-family: "Times New Roman", serif; font-size: 15px;
+    }
+
+    .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .check-item {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      padding: 9px 8px; border: 1px solid var(--panel-border); border-radius: 8px;
+      background: #fff; user-select: none; transition: background 0.2s;
+      font-size: 13px; font-family: "KaiTi", "楷体", serif;
+    }
+    .check-item:has(input:checked) {
+      background: #def0e4; border-color: var(--primary); font-weight: 600;
+    }
+    .check-item input { accent-color: var(--primary); width: 18px; height: 18px; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+    .btn-action {
+      flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--panel-border);
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; color: #222;
+      font-family: "KaiTi", "楷体", serif;
+    }
+    .btn-action:active { background: #e8f4ec; }
+
+    @media (max-width: 820px) {
+      .panel-2d {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50px 1fr 280px;
+        grid-template-areas: "header" "canvas" "controls";
+      }
+      .ctrl-wrap { border-left: none; border-top: 1px solid var(--panel-border); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 2D 交互视窗 -->
+    <div class="overlay-mask" id="overlayMask">
+      <div class="panel-2d" id="panel2D">
+        <div class="panel-header">
+          <div class="panel-title" id="panelTitle">函数图像与性质</div>
+          <button class="close-btn" id="closeBtn">返回 3D 阅览室</button>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="plotCanvas"></canvas>
+
+          <!-- 左上角解析式卡片 -->
+          <div class="formula-hud">
+            <div class="formula-top-bar">
+              <span class="formula-badge-label">实时函数解析式</span>
+              <button class="toggle-plot-btn" id="togglePlotBtn">
+                <span id="toggleIcon">👁️</span>
+                <span id="toggleText">隐藏图像</span>
+              </button>
+            </div>
+            <div class="formula-content" id="formulaMathDisplay"></div>
+          </div>
+
+          <div class="legend-hud" id="legendHud">
+            <div class="legend-item">
+              <span class="legend-line legend-dashed"></span>
+              <span>原函数 <i>y</i> = <i>f</i>(<i>x</i>)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-line legend-solid"></span>
+              <span>变换后函数</span>
+            </div>
+          </div>
+
+          <div class="canvas-tip">单指拖动平移坐标系 | 双指捏合缩放网格</div>
+        </div>
+
+        <div class="ctrl-wrap">
+          <div class="group-title">原始函数参数</div>
+          <div class="ctrl-box" id="dynamicParams"></div>
+
+          <div class="group-title">平移变换 (平滑滑行)</div>
+          <div class="ctrl-box">
+            <div>
+              <div class="item-row">
+                <span>水平平移 <i>h</i> (左加右减):</span>
+                <span id="hText" style="font-weight: bold; font-family: 'Times New Roman', serif;">0</span>
+              </div>
+              <input type="range" id="hShift" min="-5" max="5" step="0.1" value="0" />
+            </div>
+            <div>
+              <div class="item-row">
+                <span>垂直平移 <i>k</i> (上加下减):</span>
+                <span id="kText" style="font-weight: bold; font-family: 'Times New Roman', serif;">0</span>
+              </div>
+              <input type="range" id="kShift" min="-5" max="5" step="0.1" value="0" />
+            </div>
+          </div>
+
+          <div class="group-title">对称变换 (平滑翻转)</div>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" id="symX" />关于 <i>x</i> 轴对称</label>
+            <label class="check-item"><input type="checkbox" id="symY" />关于 <i>y</i> 轴对称</label>
+            <label class="check-item" style="grid-column: span 2;"><input type="checkbox" id="symO" />关于原点中心对称</label>
+          </div>
+
+          <div class="group-title">绝对值变换 (平滑折叠)</div>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" id="absY" />整体 <i>y</i> = |<i>f</i>(<i>x</i>)|</label>
+            <label class="check-item"><input type="checkbox" id="absX" />自变量 <i>f</i>(|<i>x</i>|)</label>
+          </div>
+
+          <div class="group-title">辅助视图</div>
+          <div class="check-grid">
+            <label class="check-item"><input type="checkbox" id="showGrid" checked />显示网格</label>
+            <label class="check-item"><input type="checkbox" id="showAxes" checked />显示坐标轴</label>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-action" id="resetBtn">重置所有变换</button>
+            <button class="btn-action" id="exportBtn">导出高清图像</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       ★ 0. 全局 DOM 元素与核心状态初始化 (置于最顶层，彻底杜绝 TDZ 黑屏崩溃)
+       ========================================================================== */
+    const overlayMask = document.getElementById('overlayMask');
+    const panel2D = document.getElementById('panel2D');
+    const panelTitle = document.getElementById('panelTitle');
+    const closeBtn = document.getElementById('closeBtn');
+    const plotCanvas = document.getElementById('plotCanvas');
+    const ctx = plotCanvas.getContext('2d');
+    const formulaMathDisplay = document.getElementById('formulaMathDisplay');
+
+    const togglePlotBtn = document.getElementById('togglePlotBtn');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const toggleText = document.getElementById('toggleText');
+    const legendHud = document.getElementById('legendHud');
+
+    const dynamicParams = document.getElementById('dynamicParams');
+    const hShift = document.getElementById('hShift');
+    const kShift = document.getElementById('kShift');
+    const hText = document.getElementById('hText');
+    const kText = document.getElementById('kText');
+    const symX = document.getElementById('symX');
+    const symY = document.getElementById('symY');
+    const symO = document.getElementById('symO');
+    const absY = document.getElementById('absY');
+    const absX = document.getElementById('absX');
+    const showGrid = document.getElementById('showGrid');
+    const showAxes = document.getElementById('showAxes');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+
+    let isPlotVisible = true;
+    let isCameraFlying = false;
+
+    // 通用兼容圆角矩形，防止旧版移动端 Canvas 抛错中断
+    function safeRoundRect(c2d, x, y, w, h, r) {
+      if (c2d.roundRect) {
+        c2d.roundRect(x, y, w, h, r);
+      } else {
+        c2d.beginPath();
+        c2d.moveTo(x + r, y);
+        c2d.lineTo(x + w - r, y);
+        c2d.quadraticCurveTo(x + w, y, x + w, y + r);
+        c2d.lineTo(x + w, y + h - r);
+        c2d.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        c2d.lineTo(x + r, y + h);
+        c2d.quadraticCurveTo(x, y + h, x, y + h - r);
+        c2d.lineTo(x, y + r);
+        c2d.quadraticCurveTo(x, y, x + r, y);
+        c2d.closePath();
+      }
+    }
+
+    /* ==========================================================================
+       1. 9 种基本函数定义与正规教材级排版
+       ========================================================================== */
+    const FUNCTIONS = [
+      {
+        id: 'linear', name: '① 一次函数 y = kx + b', short: '① 一次',
+        defaultParams: { k: 1, b: 0 },
+        paramDefs: [
+          { key: 'k', label: '斜率 k', min: -4, max: 4, step: 0.2 },
+          { key: 'b', label: '截距 b', min: -4, max: 4, step: 0.2 }
+        ],
+        f: (x, p) => p.k * x + p.b,
+        renderMath: (X, p) => {
+          let s = '';
+          if (p.k === 1) s = X;
+          else if (p.k === -1) s = `-${X}`;
+          else if (p.k !== 0) s = `${p.k}${X}`;
+          else s = `${p.b}`;
+          if (p.k !== 0 && p.b > 0) s += ` + ${p.b}`;
+          else if (p.k !== 0 && p.b < 0) s += ` - ${Math.abs(p.b)}`;
+          return s;
+        }
+      },
+      {
+        id: 'quadratic', name: '② 二次函数 y = ax² + bx + c', short: '② 二次',
+        defaultParams: { a: 1, b: 0, c: 0 },
+        paramDefs: [
+          { key: 'a', label: '系数 a', min: -3, max: 3, step: 0.2 },
+          { key: 'b', label: '系数 b', min: -4, max: 4, step: 0.2 },
+          { key: 'c', label: '常数 c', min: -4, max: 4, step: 0.2 }
+        ],
+        f: (x, p) => p.a * x * x + p.b * x + p.c,
+        renderMath: (X, p) => {
+          let aStr = p.a === 1 ? '' : p.a === -1 ? '-' : `${p.a}`;
+          let s = `<span class="math-exp-block">${aStr}${X}<span class="math-exp-pow">2</span></span>`;
+          if (p.b !== 0) s += (p.b > 0 ? ` + ` : ` - `) + (Math.abs(p.b) === 1 ? '' : Math.abs(p.b)) + `${X}`;
+          if (p.c !== 0) s += (p.c > 0 ? ` + ` : ` - `) + `${Math.abs(p.c)}`;
+          return s;
+        }
+      },
+      {
+        id: 'reciprocal', name: '③ 反比例函数 y = k/x', short: '③ 反比例',
+        defaultParams: { k: 1 },
+        paramDefs: [{ key: 'k', label: '参数 k', min: -4, max: 4, step: 0.2 }],
+        f: (x, p) => (Math.abs(x) < 1e-4 ? NaN : p.k / x),
+        renderMath: (X, p) => `<span class="math-frac"><span class="num">${p.k}</span><span class="den">${X}</span></span>`
+      },
+      {
+        id: 'exponential', name: '④ 指数函数 y = aˣ', short: '④ 指数',
+        defaultParams: { a: 2 },
+        paramDefs: [{ key: 'a', label: '底数 a (a>0且≠1)', min: 0.2, max: 4, step: 0.2 }],
+        f: (x, p) => (p.a > 0 && Math.abs(p.a - 1) > 1e-4 ? Math.pow(p.a, x) : NaN),
+        renderMath: (X, p) => `<span class="math-exp-block">${p.a}<span class="math-exp-pow">${X}</span></span>`
+      },
+      {
+        id: 'logarithmic', name: '⑤ 对数函数 y = logₐ(x)', short: '⑤ 对数',
+        defaultParams: { a: 2 },
+        paramDefs: [{ key: 'a', label: '底数 a (a>0且≠1)', min: 0.2, max: 4, step: 0.2 }],
+        f: (x, p) => (x > 0 && p.a > 0 && Math.abs(p.a - 1) > 1e-4 ? Math.log(x) / Math.log(p.a) : NaN),
+        renderMath: (X, p) => `<span class="math-log-block"><span class="math-op-log">log</span><span class="math-log-base">${p.a}</span></span><span class="math-log-arg">(${X})</span>`
+      },
+      {
+        id: 'power', name: '⑥ 幂函数 y = xᵃ', short: '⑥ 幂函数',
+        defaultParams: { a: 2 },
+        paramDefs: [{ key: 'a', label: '指数 a', min: -3, max: 3, step: 0.5 }],
+        f: (x, p) => {
+          if (Math.abs(x) < 1e-4 && p.a < 0) return NaN;
+          if (Number.isInteger(p.a)) {
+            return x < 0 && p.a % 2 !== 0 ? -Math.pow(-x, p.a) : Math.pow(x, p.a);
+          }
+          return x >= 0 ? Math.pow(x, p.a) : NaN;
+        },
+        renderMath: (X, p) => `<span class="math-exp-block">(${X})<span class="math-exp-pow">${p.a}</span></span>`
+      },
+      {
+        id: 'hook', name: '⑦ 对勾函数 f(x) = ax + b/x', short: '⑦ 对勾',
+        defaultParams: { a: 1, b: 1 },
+        paramDefs: [
+          { key: 'a', label: '参数 a', min: 0.2, max: 3, step: 0.2 },
+          { key: 'b', label: '参数 b', min: 0.2, max: 3, step: 0.2 }
+        ],
+        f: (x, p) => (Math.abs(x) < 1e-4 ? NaN : p.a * x + p.b / x),
+        renderMath: (X, p) => `${p.a === 1 ? '' : p.a}${X} + <span class="math-frac"><span class="num">${p.b}</span><span class="den">${X}</span></span>`
+      },
+      {
+        id: 'slim', name: '⑧ 细腰函数 f(x) = ax - b/x', short: '⑧ 细腰',
+        defaultParams: { a: 1, b: 1 },
+        paramDefs: [
+          { key: 'a', label: '参数 a', min: 0.2, max: 3, step: 0.2 },
+          { key: 'b', label: '参数 b', min: 0.2, max: 3, step: 0.2 }
+        ],
+        f: (x, p) => (Math.abs(x) < 1e-4 ? NaN : p.a * x - p.b / x),
+        renderMath: (X, p) => `${p.a === 1 ? '' : p.a}${X} - <span class="math-frac"><span class="num">${p.b}</span><span class="den">${X}</span></span>`
+      },
+      {
+        id: 'fraction', name: '⑨ 分式函数 f(x) = (cx+d)/(ax+b)', short: '⑨ 分式',
+        defaultParams: { a: 1, b: 1, c: 1, d: -1 },
+        paramDefs: [
+          { key: 'a', label: '分母 a', min: -2, max: 2, step: 0.5 },
+          { key: 'b', label: '分母 b', min: -2, max: 2, step: 0.5 },
+          { key: 'c', label: '分子 c', min: -2, max: 2, step: 0.5 },
+          { key: 'd', label: '分子 d', min: -2, max: 2, step: 0.5 }
+        ],
+        f: (x, p) => {
+          const denom = p.a * x + p.b;
+          return Math.abs(denom) < 1e-4 ? NaN : (p.c * x + p.d) / denom;
+        },
+        renderMath: (X, p) => {
+          let num = `${p.c}${X}` + (p.d > 0 ? ` + ${p.d}` : p.d < 0 ? ` - ${Math.abs(p.d)}` : '');
+          let den = `${p.a}${X}` + (p.b > 0 ? ` + ${p.b}` : p.b < 0 ? ` - ${Math.abs(p.b)}` : '');
+          return `<span class="math-frac"><span class="num">${num}</span><span class="den">${den}</span></span>`;
+        }
+      }
+    ];
+
+    /* ==========================================================================
+       2. 人教 A 版雪山封面绘制
+       ========================================================================== */
+    function createMathTextbookCoverTexture() {
+      const c = document.createElement('canvas');
+      c.width = 1024; c.height = 1420;
+      const xctx = c.getContext('2d');
+
+      const skyGrad = xctx.createLinearGradient(0, 0, 0, 800);
+      skyGrad.addColorStop(0, '#5ea8cf'); skyGrad.addColorStop(0.5, '#97cde6'); skyGrad.addColorStop(1, '#e3f3fa');
+      xctx.fillStyle = skyGrad; xctx.fillRect(0, 0, 1024, 1420);
+
+      xctx.fillStyle = '#2d5a7b'; xctx.beginPath();
+      xctx.moveTo(0, 750); xctx.lineTo(160, 420); xctx.lineTo(240, 260); xctx.lineTo(310, 360);
+      xctx.lineTo(440, 480); xctx.lineTo(540, 680); xctx.lineTo(540, 900); xctx.lineTo(0, 900); xctx.fill();
+
+      xctx.fillStyle = '#f0f8fd'; xctx.beginPath();
+      xctx.moveTo(240, 260); xctx.lineTo(210, 320); xctx.lineTo(160, 420); xctx.lineTo(190, 520);
+      xctx.lineTo(270, 440); xctx.lineTo(310, 360); xctx.fill();
+
+      const snowGrad = xctx.createLinearGradient(0, 650, 0, 1420);
+      snowGrad.addColorStop(0, '#eaf4fa'); snowGrad.addColorStop(0.3, '#f9fcfe'); snowGrad.addColorStop(1, '#edf5fa');
+      xctx.fillStyle = snowGrad; xctx.beginPath();
+      xctx.moveTo(0, 720); xctx.bezierCurveTo(300, 660, 700, 760, 1024, 690); xctx.lineTo(1024, 1420); xctx.lineTo(0, 1420); xctx.fill();
+
+      xctx.strokeStyle = '#c4deec'; xctx.lineWidth = 14;
+      xctx.beginPath(); xctx.moveTo(480, 720); xctx.bezierCurveTo(360, 840, 560, 960, 380, 1080);
+      xctx.bezierCurveTo(240, 1180, 400, 1300, 260, 1380); xctx.stroke();
+
+      xctx.lineWidth = 10; xctx.beginPath();
+      xctx.moveTo(520, 740); xctx.bezierCurveTo(400, 860, 600, 980, 420, 1100); xctx.bezierCurveTo(300, 1200, 580, 1320, 560, 1400); xctx.stroke();
+
+      xctx.fillStyle = '#1c3a27'; xctx.beginPath(); xctx.arc(260, 1360, 12, 0, Math.PI*2); xctx.fill();
+      xctx.fillRect(252, 1372, 16, 24); xctx.fillStyle = '#d4881e'; xctx.fillRect(235, 1392, 50, 6);
+
+      xctx.fillStyle = '#222'; xctx.beginPath(); xctx.arc(560, 1370, 11, 0, Math.PI*2); xctx.fill();
+      xctx.fillRect(553, 1381, 14, 22); xctx.fillStyle = '#2874a6'; xctx.fillRect(540, 1400, 45, 6);
+
+      xctx.fillStyle = '#4fa8b5'; xctx.fillRect(610, 0, 414, 280);
+      xctx.fillStyle = '#ffffff'; xctx.font = '500 32px "PingFang SC", "Microsoft YaHei"';
+      xctx.fillText('普 通 高 中 教 科 书', 660, 120);
+
+      xctx.fillStyle = '#ffffff'; xctx.fillRect(610, 240, 320, 340);
+      xctx.fillStyle = '#080808'; xctx.font = '900 110px "Source Han Serif CN", "Songti SC", "SimSun", serif';
+      xctx.fillText('数 学', 645, 390);
+
+      xctx.font = '600 36px sans-serif'; xctx.fillStyle = '#333'; xctx.fillText('必  修', 720, 470);
+      xctx.fillStyle = '#9b714b'; xctx.fillRect(610, 510, 320, 90);
+      xctx.fillStyle = '#ffffff'; xctx.font = 'bold 44px sans-serif'; xctx.fillText('第 一 册', 685, 574);
+
+      xctx.fillStyle = '#2b7a4b'; xctx.beginPath(); xctx.arc(140, 120, 68, 0, Math.PI*2); xctx.fill();
+      xctx.fillStyle = '#fff'; xctx.beginPath(); xctx.arc(140, 120, 60, 0, Math.PI*2); xctx.stroke();
+      xctx.font = 'bold 20px sans-serif'; xctx.textAlign = 'center'; xctx.fillText('教育部审定', 140, 115); xctx.fillText('2019', 140, 140);
+
+      xctx.textAlign = 'left'; xctx.fillStyle = '#222'; xctx.font = 'italic bold 36px "KaiTi", "STKaiti", serif';
+      xctx.fillText('人民教育出版社', 80, 1375);
+      xctx.fillStyle = '#f08620'; xctx.font = '900 56px sans-serif'; xctx.fillText('A', 860, 1375);
+      xctx.font = 'bold 36px sans-serif'; xctx.fillText('版', 915, 1375);
+
+      const tex = new THREE.CanvasTexture(c);
+      if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    /* ==========================================================================
+       3. 3D 图书馆场景搭建与实体
+       ========================================================================== */
+    const app = document.getElementById('app');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x161310);
+    scene.fog = new THREE.FogExp2(0x161310, 0.04);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.domElement.className = 'webgl';
+    app.appendChild(renderer.domElement);
+
+    // 强化环境光照，杜绝过暗甚至黑屏
+    scene.add(new THREE.AmbientLight(0xffecd0, 0.9));
+    const deskSpot = new THREE.SpotLight(0xffeaaf, 1.8, 25, Math.PI / 3, 0.4, 1.2);
+    deskSpot.position.set(3, 8, 4);
+    deskSpot.castShadow = true;
+    deskSpot.shadow.mapSize.set(1024, 1024);
+    scene.add(deskSpot);
+    scene.add(deskSpot.target);
+
+    const backFill = new THREE.DirectionalLight(0xdbe7ff, 0.5);
+    backFill.position.set(-6, 8, -6);
+    scene.add(backFill);
+
+    const tableMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(16, 0.8, 12),
+      new THREE.MeshStandardMaterial({ color: 0x472e1e, roughness: 0.4, metalness: 0.1 })
+    );
+    tableMesh.position.y = -0.4;
+    tableMesh.receiveShadow = true;
+    scene.add(tableMesh);
+
+    const floorMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(50, 50),
+      new THREE.MeshStandardMaterial({ color: 0x22160e, roughness: 0.8 })
+    );
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.position.y = -0.81;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    const shelfWoodMat = new THREE.MeshStandardMaterial({ color: 0x2c1a11, roughness: 0.7 });
+    const bookColors = [0x78281f, 0x1d3a54, 0x244a30, 0x946d29, 0x4a2c4e, 0xd4c2a5];
+
+    function createBookshelf(x, z, rotY) {
+      const shelfGroup = new THREE.Group();
+      const frameL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 1.8), shelfWoodMat);
+      frameL.position.x = -4.5; frameL.position.y = 3.2; shelfGroup.add(frameL);
+      const frameR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 1.8), shelfWoodMat);
+      frameR.position.x = 4.5; frameR.position.y = 3.2; shelfGroup.add(frameR);
+      const backBoard = new THREE.Mesh(new THREE.BoxGeometry(9, 8, 0.1), shelfWoodMat);
+      backBoard.position.set(0, 3.2, -0.9); shelfGroup.add(backBoard);
+
+      for (let level = 0; level < 4; level++) {
+        const boardY = level * 1.8 + 0.5;
+        const plank = new THREE.Mesh(new THREE.BoxGeometry(9, 0.2, 1.8), shelfWoodMat);
+        plank.position.y = boardY; shelfGroup.add(plank);
+
+        let curX = -4.1;
+        while (curX < 4.1) {
+          const bW = 0.15 + Math.random() * 0.12;
+          const bH = 0.9 + Math.random() * 0.6;
+          const bD = 1.1 + Math.random() * 0.3;
+          const bColor = bookColors[Math.floor(Math.random() * bookColors.length)];
+          const bMesh = new THREE.Mesh(new THREE.BoxGeometry(bW, bH, bD), new THREE.MeshStandardMaterial({ color: bColor, roughness: 0.5 }));
+          bMesh.position.set(curX + bW/2, boardY + bH/2 + 0.1, 0);
+          shelfGroup.add(bMesh);
+          curX += bW + 0.03;
+        }
+      }
+      shelfGroup.position.set(x, 0, z);
+      shelfGroup.rotation.y = rotY;
+      scene.add(shelfGroup);
+    }
+    createBookshelf(0, -7.5, 0);
+    createBookshelf(-9, -4, Math.PI / 4);
+    createBookshelf(9, -4, -Math.PI / 4);
+
+    const bookGroup = new THREE.Group();
+    const bWidth = 4.8, bHeight = 0.38, bDepth = 6.6;
+    const coverTex = createMathTextbookCoverTexture();
+
+    const bookMaterials = [
+      new THREE.MeshStandardMaterial({ color: 0x4fa8b5, roughness: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: 0x4fa8b5, roughness: 0.5 }),
+      new THREE.MeshStandardMaterial({ map: coverTex, roughness: 0.25 }),
+      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 }),
+      new THREE.MeshStandardMaterial({ color: 0x4fa8b5, roughness: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: 0x4fa8b5, roughness: 0.5 })
+    ];
+
+    const bookMesh = new THREE.Mesh(new THREE.BoxGeometry(bWidth, bHeight, bDepth), bookMaterials);
+    bookMesh.position.y = bHeight / 2;
+    bookMesh.castShadow = true;
+    bookMesh.receiveShadow = true;
+    bookGroup.add(bookMesh);
+
+    const paper = new THREE.Mesh(
+      new THREE.BoxGeometry(bWidth - 0.15, bHeight - 0.05, bDepth - 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xfdfbf2, roughness: 0.9 })
+    );
+    paper.position.set(0.06, bHeight / 2, 0);
+    bookGroup.add(paper);
+    scene.add(bookGroup);
+
+    function makeBadgeTexture(title) {
+      const cvs = document.createElement('canvas');
+      cvs.width = 256; cvs.height = 140;
+      const x = cvs.getContext('2d');
+      x.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      safeRoundRect(x, 4, 4, 248, 132, 18);
+      x.fill();
+      x.lineWidth = 6; x.strokeStyle = '#1b5e39'; x.stroke();
+      x.fillStyle = '#1b5e39';
+      x.font = 'bold 36px "KaiTi", "楷体", "STKaiti", sans-serif';
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(title, 128, 70);
+      const tex = new THREE.CanvasTexture(cvs);
+      if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    const interactiveButtons = [];
+    const startX = -1.4, startZ = -1.8;
+    const stepX = 1.4, stepZ = 1.8;
+
+    FUNCTIONS.forEach((fn, idx) => {
+      const row = Math.floor(idx / 3);
+      const col = idx % 3;
+      const px = startX + col * stepX;
+      const pz = startZ + row * stepZ;
+
+      const badgeTex = makeBadgeTexture(fn.short);
+      const badgeMaterials = [
+        new THREE.MeshStandardMaterial({ color: 0xffffff }),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }),
+        new THREE.MeshStandardMaterial({ map: badgeTex, roughness: 0.3 }),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }),
+        new THREE.MeshStandardMaterial({ color: 0xffffff }),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+      ];
+
+      const btnMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 1.4), badgeMaterials);
+      btnMesh.position.set(px, bHeight + 0.1, pz);
+      btnMesh.castShadow = true;
+      btnMesh.userData = { fnData: fn, basePosY: bHeight + 0.1, index: idx };
+      scene.add(btnMesh);
+      interactiveButtons.push(btnMesh);
+    });
+
+    /* ==========================================================================
+       ★ 影视级推拉运镜动力学系统 (由远及近飞入 & 由近及远回退)
+       ========================================================================== */
+    let theta = 0.25, phi = Math.PI / 3.4, radius = 10.5;
+    const lookTarget = new THREE.Vector3(0, 0.4, 0);
+    const currentLookTarget = new THREE.Vector3(0, 0.4, 0);
+
+    function updateCameraFromOrbit() {
+      phi = Math.max(0.15, Math.min(Math.PI / 2 - 0.06, phi));
+      radius = Math.max(4.5, Math.min(17, radius));
+      camera.position.x = lookTarget.x + radius * Math.sin(phi) * Math.sin(theta);
+      camera.position.y = lookTarget.y + radius * Math.cos(phi);
+      camera.position.z = lookTarget.z + radius * Math.sin(phi) * Math.cos(theta);
+      currentLookTarget.copy(lookTarget);
+      camera.lookAt(currentLookTarget);
+    }
+    updateCameraFromOrbit();
+
+    let flyStartTime = 0;
+    let flyDuration = 760;
+    let flyStartPos = new THREE.Vector3();
+    let flyEndPos = new THREE.Vector3();
+    let flyStartLook = new THREE.Vector3();
+    let flyEndLook = new THREE.Vector3();
+    let flyCallback = null;
+
+    let savedOverviewCamPos = new THREE.Vector3();
+    let savedOverviewLook = new THREE.Vector3();
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function flyCameraToBadge(btnMesh) {
+      if (isCameraFlying) return;
+      isCameraFlying = true;
+      flyStartTime = performance.now();
+      flyDuration = 760;
+
+      flyStartPos.copy(camera.position);
+      flyStartLook.copy(currentLookTarget);
+
+      savedOverviewCamPos.copy(camera.position);
+      savedOverviewLook.copy(currentLookTarget);
+
+      const targetPos = btnMesh.position.clone();
+      flyEndLook.set(targetPos.x, targetPos.y + 0.1, targetPos.z);
+      flyEndPos.set(targetPos.x * 0.35, targetPos.y + 1.6, targetPos.z + 1.35);
+
+      btnMesh.position.y -= 0.06;
+
+      flyCallback = () => {
+        btnMesh.position.y = btnMesh.userData.basePosY;
+        open2DView(btnMesh.userData.fnData);
+      };
+    }
+
+    function flyCameraBackOverview() {
+      if (isCameraFlying) return;
+      isCameraFlying = true;
+      flyStartTime = performance.now();
+      flyDuration = 720;
+
+      flyStartPos.copy(camera.position);
+      flyStartLook.copy(currentLookTarget);
+
+      flyEndPos.copy(savedOverviewCamPos);
+      flyEndLook.copy(savedOverviewLook);
+
+      flyCallback = () => {
+        lookTarget.copy(savedOverviewLook);
+        updateCameraFromOrbit();
+      };
+    }
+
+    /* ==========================================================================
+       ★ 平板触控手势引擎
+       ========================================================================== */
+    const activeTouches = new Map();
+    let initialPinchDist = 0;
+    let initialPinchRadius = 10.5;
+    let touchStartPos = { x: 0, y: 0 };
+    let hasMoved = false;
+
+    const webglCanvas = renderer.domElement;
+    const raycaster = new THREE.Raycaster();
+    const ndcMouse = new THREE.Vector2();
+
+    webglCanvas.addEventListener('pointerdown', (e) => {
+      if (overlayMask.style.display === 'flex' || isCameraFlying) return;
+      activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activeTouches.size === 1) {
+        touchStartPos = { x: e.clientX, y: e.clientY };
+        hasMoved = false;
+      } else if (activeTouches.size === 2) {
+        const points = Array.from(activeTouches.values());
+        initialPinchDist = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        initialPinchRadius = radius;
+      }
+    });
+
+    webglCanvas.addEventListener('pointermove', (e) => {
+      if (!activeTouches.has(e.pointerId) || overlayMask.style.display === 'flex' || isCameraFlying) return;
+      const prev = activeTouches.get(e.pointerId);
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (Math.hypot(e.clientX - touchStartPos.x, e.clientY - touchStartPos.y) > 7) {
+        hasMoved = true;
+      }
+
+      if (activeTouches.size === 1) {
+        theta -= dx * 0.005;
+        phi -= dy * 0.005;
+        updateCameraFromOrbit();
+      } else if (activeTouches.size === 2) {
+        const points = Array.from(activeTouches.values());
+        const dist = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+        if (initialPinchDist > 0) {
+          const factor = initialPinchDist / dist;
+          radius = initialPinchRadius * factor;
+          updateCameraFromOrbit();
+        }
+      }
+    });
+
+    const handlePointerUp = (e) => {
+      if (!activeTouches.has(e.pointerId)) return;
+      if (!hasMoved && activeTouches.size === 1 && overlayMask.style.display !== 'flex' && !isCameraFlying) {
+        const rect = webglCanvas.getBoundingClientRect();
+        ndcMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        ndcMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(ndcMouse, camera);
+        const hits = raycaster.intersectObjects(interactiveButtons);
+        if (hits.length > 0) {
+          flyCameraToBadge(hits[0].object);
+        }
+      }
+      activeTouches.delete(e.pointerId);
+      if (activeTouches.size < 2) initialPinchDist = 0;
+    };
+
+    webglCanvas.addEventListener('pointerup', handlePointerUp);
+    webglCanvas.addEventListener('pointercancel', handlePointerUp);
+
+    webglCanvas.addEventListener('wheel', (e) => {
+      if (overlayMask.style.display === 'flex' || isCameraFlying) return;
+      radius += e.deltaY * 0.008;
+      updateCameraFromOrbit();
+    }, { passive: true });
+
+    let clock = 0;
+    function renderLoop() {
+      requestAnimationFrame(renderLoop);
+      clock += 0.02;
+
+      if (!isCameraFlying && overlayMask.style.display !== 'flex') {
+        interactiveButtons.forEach((btn, i) => {
+          btn.position.y = btn.userData.basePosY + Math.sin(clock + i * 0.8) * 0.03;
+        });
+      }
+
+      if (isCameraFlying) {
+        const now = performance.now();
+        const progress = Math.min(1.0, (now - flyStartTime) / flyDuration);
+        const ease = easeInOutCubic(progress);
+
+        camera.position.lerpVectors(flyStartPos, flyEndPos, ease);
+        currentLookTarget.lerpVectors(flyStartLook, flyEndLook, ease);
+        camera.lookAt(currentLookTarget);
+
+        if (progress >= 1.0) {
+          isCameraFlying = false;
+          if (flyCallback) {
+            const cb = flyCallback;
+            flyCallback = null;
+            cb();
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    renderLoop();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      resizeCanvas();
+    });
+
+    /* ==========================================================================
+       4. 2D 交互视图：流体物理缓动、底数位置校正、图像显隐切换
+       ========================================================================== */
+    let currentFn = FUNCTIONS[0];
+    let baseParams = {};
+
+    const animState = {
+      h: 0, k: 0,
+      symX: 0, symY: 0, symO: 0,
+      absY: 0, absX: 0,
+      plotAlpha: 1.0,
+      params: {}
+    };
+    const targetState = {
+      h: 0, k: 0,
+      symX: 0, symY: 0, symO: 0,
+      absY: 0, absX: 0,
+      plotAlpha: 1.0,
+      params: {}
+    };
+
+    let scale = 44;
+    let pan = { x: 0, y: 0 };
+
+    function updateToggleBtnUI() {
+      if (isPlotVisible) {
+        targetState.plotAlpha = 1.0;
+        toggleText.textContent = '隐藏图像';
+        toggleIcon.textContent = '👁️';
+        togglePlotBtn.classList.remove('hidden-mode');
+        legendHud.style.opacity = '1';
+      } else {
+        targetState.plotAlpha = 0.0;
+        toggleText.textContent = '点击显示图像';
+        toggleIcon.textContent = '👁️‍🗨️';
+        togglePlotBtn.classList.add('hidden-mode');
+        legendHud.style.opacity = '0.35';
+      }
+    }
+
+    ['pointerdown', 'touchstart', 'mousedown'].forEach(ev => {
+      togglePlotBtn.addEventListener(ev, (e) => e.stopPropagation());
+    });
+    togglePlotBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isPlotVisible = !isPlotVisible;
+      updateToggleBtnUI();
+    });
+
+    function open2DView(fnData) {
+      currentFn = fnData;
+      panelTitle.textContent = fnData.name;
+      baseParams = { ...fnData.defaultParams };
+
+      animState.h = 0; animState.k = 0;
+      animState.symX = 0; animState.symY = 0; animState.symO = 0;
+      animState.absY = 0; animState.absX = 0;
+      targetState.h = 0; targetState.k = 0;
+      targetState.symX = 0; targetState.symY = 0; targetState.symO = 0;
+      targetState.absY = 0; targetState.absX = 0;
+      animState.params = { ...fnData.defaultParams };
+      targetState.params = { ...fnData.defaultParams };
+
+      isPlotVisible = true;
+      animState.plotAlpha = 1.0;
+      targetState.plotAlpha = 1.0;
+      updateToggleBtnUI();
+
+      hShift.value = 0; kShift.value = 0;
+      hText.textContent = '0'; kText.textContent = '0';
+      symX.checked = false; symY.checked = false; symO.checked = false;
+      absY.checked = false; absX.checked = false;
+      pan = { x: 0, y: 0 }; scale = 44;
+
+      buildParamControls();
+      updateFormulaHtml();
+
+      overlayMask.style.display = 'flex';
+      requestAnimationFrame(() => {
+        overlayMask.classList.add('active');
+        panel2D.classList.add('show');
+        resizeCanvas();
+      });
+    }
+
+    closeBtn.addEventListener('click', () => {
+      panel2D.classList.remove('show');
+      overlayMask.classList.remove('active');
+      setTimeout(() => { 
+        overlayMask.style.display = 'none'; 
+        flyCameraBackOverview();
+      }, 260);
+    });
+
+    function buildParamControls() {
+      dynamicParams.innerHTML = '';
+      currentFn.paramDefs.forEach(def => {
+        const row = document.createElement('div');
+        row.innerHTML = `
+          <div class="item-row">
+            <span>${def.label}:</span>
+            <input type="number" id="num_${def.key}" value="${targetState.params[def.key]}" step="${def.step}" />
+          </div>
+          <input type="range" id="rng_${def.key}" min="${def.min}" max="${def.max}" step="${def.step}" value="${targetState.params[def.key]}" />
+        `;
+        dynamicParams.appendChild(row);
+
+        const num = row.querySelector(`#num_${def.key}`);
+        const rng = row.querySelector(`#rng_${def.key}`);
+        const sync = (v) => {
+          const val = parseFloat(v);
+          targetState.params[def.key] = val;
+          baseParams[def.key] = val;
+          num.value = val; rng.value = val;
+          updateFormulaHtml();
+        };
+        num.addEventListener('input', () => sync(num.value));
+        rng.addEventListener('input', () => sync(rng.value));
+      });
+    }
+
+    function updateFormulaHtml() {
+      const h = parseFloat(hShift.value);
+  const k = parseFloat(kShift.value);
+
+  let xPart = `<i>x</i>`;
+  if (absX.checked) xPart = `|<i>x</i>|`;
+  if (symY.checked || symO.checked) xPart = `-${xPart}`;
+
+  if (h > 0) xPart = `(${xPart} - ${h})`;
+  else if (h < 0) xPart = `(${xPart} + ${Math.abs(h)})`;
+
+  let core = currentFn.renderMath(xPart, targetState.params);
+
+  // ★ 核心修复 1：先在内部完成上下平移
+  if (k > 0) core = `${core} + ${k}`;
+  else if (k < 0) core = `${core} - ${Math.abs(k)}`;
+
+  // ★ 核心修复 2：再把平移后的整体包入绝对值 |...|
+  if (absY.checked) core = `<span class="math-abs">|</span>${core}<span class="math-abs">|</span>`;
+
+  // 对称处理
+  if (symX.checked || symO.checked) core = `-(${core})`;
+
+  formulaMathDisplay.innerHTML = `<i>y</i> = ${core}`;
+    }
+
+    function resizeCanvas() {
+      const rect = plotCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      plotCanvas.width = rect.width * dpr;
+      plotCanvas.height = rect.height * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+
+    function toScreen(x, y) {
+      const w = plotCanvas.getBoundingClientRect().width;
+      const h = plotCanvas.getBoundingClientRect().height;
+      return [w / 2 + pan.x + x * scale, h / 2 + pan.y - y * scale];
+    }
+
+    function toMath(px, py) {
+      const w = plotCanvas.getBoundingClientRect().width;
+      const h = plotCanvas.getBoundingClientRect().height;
+      return [(px - (w / 2 + pan.x)) / scale, ((h / 2 + pan.y) - py) / scale];
+    }
+
+    function evalTransformedSmooth(mathX) {
+     let x1 = mathX - animState.h;
+  const tY = Math.max(animState.symY, animState.symO);
+  const scaleX = 1 - 2 * tY;
+  let x2 = scaleX * x1;
+
+  let xEff = x2;
+  if (x2 < 0) xEff = x2 * (1 - 2 * animState.absX);
+
+  let yVal = currentFn.f(xEff, animState.params);
+  if (isNaN(yVal) || !isFinite(yVal)) return NaN;
+
+  // ★ 核心修复 1：先上下平移 k
+  yVal = yVal + animState.k;
+
+  // ★ 核心修复 2：在平移后的结果上，再整体翻折 |f(x) + k|
+  if (yVal < 0) yVal = yVal * (1 - 2 * animState.absY);
+
+  // 对称变换
+  const tX = Math.max(animState.symX, animState.symO);
+  const scaleY = 1 - 2 * tX;
+  yVal = scaleY * yVal;
+
+  return yVal;
+    }
+
+    function evalOriginal(mathX) {
+      return currentFn.f(mathX, baseParams);
+    }
+
+    function drawCurve(evaluator, isDashed, color, lineWidth) {
+      if (animState.plotAlpha <= 0.001) return;
+
+      const w = plotCanvas.getBoundingClientRect().width;
+      const h = plotCanvas.getBoundingClientRect().height;
+      const steps = w * 1.5;
+
+      ctx.save();
+      ctx.globalAlpha = animState.plotAlpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (isDashed) ctx.setLineDash([6, 6]);
+      else ctx.setLineDash([]);
+
+      ctx.beginPath();
+      let drawing = false;
+      let lastSy = null;
+
+      for (let i = 0; i <= steps; i++) {
+        const px = (i / steps) * w;
+        const [mx] = toMath(px, 0);
+        const my = evaluator(mx);
+
+        if (isNaN(my) || !isFinite(my)) {
+          drawing = false;
+          continue;
+        }
+
+        const [sx, sy] = toScreen(mx, my);
+        if (lastSy !== null && Math.abs(sy - lastSy) > h * 0.6) {
+          drawing = false;
+        }
+
+        if (!drawing) {
+          ctx.moveTo(sx, sy);
+          drawing = true;
+        } else {
+          ctx.lineTo(sx, sy);
+        }
+        lastSy = sy;
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function plotLoop() {
+      requestAnimationFrame(plotLoop);
+      if (overlayMask.style.display !== 'flex') return;
+
+      const rect = plotCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w === 0 || h === 0) return;
+
+      const lerp = 0.09;
+      animState.h += (targetState.h - animState.h) * lerp;
+      animState.k += (targetState.k - animState.k) * lerp;
+      animState.symX += (targetState.symX - animState.symX) * lerp;
+      animState.symY += (targetState.symY - animState.symY) * lerp;
+      animState.symO += (targetState.symO - animState.symO) * lerp;
+      animState.absY += (targetState.absY - animState.absY) * lerp;
+      animState.absX += (targetState.absX - animState.absX) * lerp;
+      animState.plotAlpha += (targetState.plotAlpha - animState.plotAlpha) * 0.14;
+
+      for (let key in targetState.params) {
+        if (animState.params[key] !== undefined) {
+          animState.params[key] += (targetState.params[key] - animState.params[key]) * lerp;
+        }
+      }
+
+      ctx.fillStyle = '#f2f9f4';
+      ctx.fillRect(0, 0, w, h);
+
+      const [ox, oy] = toScreen(0, 0);
+
+      if (showGrid.checked) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#d4ead8';
+        ctx.beginPath();
+        const [minX] = toMath(0, 0);
+        const [maxX] = toMath(w, 0);
+        for (let x = Math.floor(minX); x <= Math.ceil(maxX); x++) {
+          const [sx] = toScreen(x, 0);
+          ctx.moveTo(sx, 0); ctx.lineTo(sx, h);
+        }
+        const [, maxY] = toMath(0, 0);
+        const [, minY] = toMath(0, h);
+        for (let y = Math.floor(minY); y <= Math.ceil(maxY); y++) {
+          const [, sy] = toScreen(0, y);
+          ctx.moveTo(0, sy); ctx.lineTo(w, sy);
+        }
+        ctx.stroke();
+      }
+
+      if (showAxes.checked) {
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = '#2d573d';
+        ctx.fillStyle = '#224730';
+        ctx.font = 'italic 15px "Times New Roman", "Cambria Math", serif';
+
+        ctx.beginPath();
+        ctx.moveTo(0, oy); ctx.lineTo(w, oy);
+        ctx.moveTo(w - 7, oy - 4); ctx.lineTo(w, oy); ctx.lineTo(w - 7, oy + 4);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(ox, h); ctx.lineTo(ox, 0);
+        ctx.moveTo(ox - 4, 7); ctx.lineTo(ox, 0); ctx.lineTo(ox + 4, 7);
+        ctx.stroke();
+
+        ctx.font = '15px "KaiTi", "楷体", serif';
+        ctx.fillText('O', ox - 14, oy + 14);
+
+        ctx.font = 'italic 16px "Times New Roman", serif';
+        ctx.fillText('x', w - 14, oy + 15);
+        ctx.fillText('y', ox + 8, 14);
+
+        ctx.font = '12px "Times New Roman", serif';
+        const [minX] = toMath(0, 0);
+        const [maxX] = toMath(w, 0);
+        for (let x = Math.floor(minX); x <= Math.ceil(maxX); x++) {
+          if (x === 0) continue;
+          const [sx] = toScreen(x, 0);
+          ctx.beginPath(); ctx.moveTo(sx, oy - 2); ctx.lineTo(sx, oy + 2); ctx.stroke();
+          ctx.fillText(x.toString(), sx - 4, oy + 13);
+        }
+        const [, maxY] = toMath(0, 0);
+        const [, minY] = toMath(0, h);
+        for (let y = Math.floor(minY); y <= Math.ceil(maxY); y++) {
+          if (y === 0) continue;
+          const [, sy] = toScreen(0, y);
+          ctx.beginPath(); ctx.moveTo(ox - 2, sy); ctx.lineTo(ox + 2, sy); ctx.stroke();
+          ctx.fillText(y.toString(), ox + 6, sy + 4);
+        }
+      }
+
+      drawCurve(evalOriginal, true, '#4e7a61', 2.0);
+      drawCurve(evalTransformedSmooth, false, '#000000', 2.6);
+    }
+    plotLoop();
+
+    /* ==========================================================================
+       ★ 2D 画布平板手势引擎
+       ========================================================================== */
+    const plotTouches = new Map();
+    let initial2DDist = 0;
+    let initial2DScale = 44;
+
+    plotCanvas.addEventListener('pointerdown', (e) => {
+      plotTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (plotTouches.size === 2) {
+        const pts = Array.from(plotTouches.values());
+        initial2DDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        initial2DScale = scale;
+      }
+    });
+
+    plotCanvas.addEventListener('pointermove', (e) => {
+      if (!plotTouches.has(e.pointerId)) return;
+      const prev = plotTouches.get(e.pointerId);
+      const dx = e.clientX - prev.x;
+      const dy = e.clientY - prev.y;
+      plotTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (plotTouches.size === 1) {
+        pan.x += dx;
+        pan.y += dy;
+      } else if (plotTouches.size === 2) {
+        const pts = Array.from(plotTouches.values());
+        const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        if (initial2DDist > 0) {
+          const factor = dist / initial2DDist;
+          scale = Math.max(15, Math.min(180, initial2DScale * factor));
+        }
+      }
+    });
+
+    const handlePlotPointerUp = (e) => {
+      plotTouches.delete(e.pointerId);
+      if (plotTouches.size < 2) initial2DDist = 0;
+    };
+    plotCanvas.addEventListener('pointerup', handlePlotPointerUp);
+    plotCanvas.addEventListener('pointercancel', handlePlotPointerUp);
+
+    plotCanvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoom = e.deltaY < 0 ? 1.08 : 0.92;
+      scale = Math.max(15, Math.min(180, scale * zoom));
+    }, { passive: false });
+
+    // 变换事件监听绑定
+    hShift.addEventListener('input', (e) => {
+      targetState.h = parseFloat(e.target.value);
+      hText.textContent = e.target.value;
+      updateFormulaHtml();
+    });
+    kShift.addEventListener('input', (e) => {
+      targetState.k = parseFloat(e.target.value);
+      kText.textContent = e.target.value;
+      updateFormulaHtml();
+    });
+
+    symX.addEventListener('change', () => { targetState.symX = symX.checked ? 1 : 0; updateFormulaHtml(); });
+    symY.addEventListener('change', () => { targetState.symY = symY.checked ? 1 : 0; updateFormulaHtml(); });
+    symO.addEventListener('change', () => { targetState.symO = symO.checked ? 1 : 0; updateFormulaHtml(); });
+    absY.addEventListener('change', () => { targetState.absY = absY.checked ? 1 : 0; updateFormulaHtml(); });
+    absX.addEventListener('change', () => { targetState.absX = absX.checked ? 1 : 0; updateFormulaHtml(); });
+
+    resetBtn.addEventListener('click', () => {
+      targetState.h = 0; targetState.k = 0;
+      targetState.symX = 0; targetState.symY = 0; targetState.symO = 0;
+      targetState.absY = 0; targetState.absX = 0;
+      isPlotVisible = true;
+      updateToggleBtnUI();
+
+      hShift.value = 0; kShift.value = 0;
+      hText.textContent = '0'; kText.textContent = '0';
+      symX.checked = false; symY.checked = false; symO.checked = false;
+      absY.checked = false; absX.checked = false;
+      pan = { x: 0, y: 0 }; scale = 44;
+      updateFormulaHtml();
+    });
+
+    exportBtn.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.download = `${currentFn.name}_变换对比.png`;
+      a.href = plotCanvas.toDataURL('image/png');
+      a.click();
+    });
+  </script>
+</body>
+</html>
