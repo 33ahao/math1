@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中数学外接球模型 - 交互与立体批注课堂</title>
+
+    <!-- KaTeX 数学排版引擎（彻底解决乱码） -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 45%, #f4ede2 0%, #e6dccb 60%, #d5c7b2 100%);
+            font-family: "KaiTi", "STKaiti", "楷体", "Kaiti SC", "SimKai", serif;
+            color: #2c2117;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* 顶部操作提示栏 */
+        #top-bar {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(244, 237, 226, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 8px 24px;
+            border-radius: 30px;
+            box-shadow: 0 4px 18px rgba(70, 55, 38, 0.15);
+            font-size: 15px;
+            font-weight: bold;
+            color: #3b2c1d;
+            border: 1px solid #d8cab5;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #scale-badge {
+            display: none;
+            background: #9a480d;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        /* 书本翻页控制悬浮条 */
+        #page-nav-bar {
+            position: absolute;
+            top: 66px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: none;
+            gap: 12px;
+        }
+        .page-btn {
+            background: #edd8be;
+            border: 1.5px solid #bd9b76;
+            color: #4a2810;
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 14.5px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(70, 50, 30, 0.18);
+            transition: all 0.25s;
+        }
+        .page-btn:hover {
+            background: #e2c7a3;
+            transform: scale(1.05);
+        }
+
+        /* 全屏透明几何体涂鸦层 */
+        #draw-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        #draw-canvas.drawing-active {
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        /* 底部浮动教师批注与缩放工具栏 */
+        #paint-toolbar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            background: rgba(246, 240, 231, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1.5px solid #cbbaa5;
+            border-radius: 40px;
+            padding: 8px 18px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 26px rgba(60, 45, 30, 0.22);
+        }
+
+        .tool-btn {
+            background: #efe4d3;
+            border: 1px solid #cbb89f;
+            padding: 6px 13px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            color: #3f2f1e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tool-btn:hover {
+            background: #e2d2bc;
+        }
+        .tool-btn.active {
+            background: #1e40af;
+            color: #fff;
+            border-color: #1e40af;
+            box-shadow: 0 2px 8px rgba(30, 64, 175, 0.35);
+        }
+
+        .zoom-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-left: 6px;
+            border-left: 1px solid #d5c4af;
+        }
+        .zoom-btn {
+            background: #e8dccb;
+            color: #633806;
+            padding: 5px 10px;
+        }
+        .zoom-btn:hover {
+            background: #ddceba;
+        }
+
+        .palette {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 6px;
+            border-left: 1px solid #d5c4af;
+        }
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .color-dot.active {
+            transform: scale(1.3);
+            border-color: #2b1f13;
+        }
+
+        /* 右侧可收缩/展开推导面板 */
+        #side-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 460px;
+            height: 100%;
+            background: rgba(245, 239, 229, 0.98);
+            backdrop-filter: blur(16px);
+            box-shadow: -8px 0 35px rgba(60, 45, 30, 0.18);
+            z-index: 30;
+            transform: translateX(100%);
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            border-left: 2px solid #cebfab;
+        }
+
+        #side-panel.open {
+            transform: translateX(0);
+        }
+
+        #side-panel.collapsed {
+            transform: translateX(100%);
+        }
+
+        #panel-toggle-tab {
+            position: absolute;
+            left: -42px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            padding: 16px 6px;
+            background: #e6dac8;
+            border: 2px solid #cebfab;
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            font-size: 13.5px;
+            font-weight: bold;
+            color: #3b2b1b;
+            cursor: pointer;
+            box-shadow: -4px 4px 12px rgba(60, 45, 30, 0.15);
+            text-align: center;
+            line-height: 1.35;
+            transition: background 0.2s;
+            display: none;
+        }
+        #panel-toggle-tab:hover {
+            background: #dacbb6;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #cebfab;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+
+        .panel-title {
+            font-size: 18.5px;
+            font-weight: bold;
+            color: #2a1d12;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-box-toggle {
+            display: none;
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+        }
+        .btn-box-toggle:hover {
+            background: #0369a1;
+        }
+
+        .btn-back {
+            background: #b43d0e;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .derivation-box {
+            background: #e9dec9;
+            border: 1px solid #cdbfae;
+            border-radius: 10px;
+            padding: 18px;
+            font-size: 15.5px;
+            line-height: 1.85;
+            color: #312215;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .derivation-box h4 {
+            color: #1a1109;
+            margin-bottom: 10px;
+            font-size: 16.5px;
+            border-left: 4px solid #b43d0e;
+            padding-left: 8px;
+        }
+        .formula-highlight {
+            background: #ded0bc;
+            border: 1px dashed #ad9375;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .katex {
+            font-size: 1.15em !important;
+            color: #8b1818 !important;
+        }
+    </style>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <div id="top-bar">
+        <span id="top-text">📖 浅卡其色教材：点击封面可 3D 翻页，鼠标拖拽可 360° 旋转全貌</span>
+        <span id="scale-badge">模型大小: 100%</span>
+    </div>
+
+    <!-- 翻页控制导航栏 -->
+    <div id="page-nav-bar">
+        <button class="page-btn" id="btn-prev-page" style="display:none;">⬅ 翻回第 1 页 (棱柱/墙角/对棱/双直角)</button>
+        <button class="page-btn" id="btn-next-page">📖 翻至第 2 页 (垂线/等腰/面面垂直双面定位) ➔</button>
+    </div>
+
+    <!-- 全屏几何体批注画板（直接覆盖在3D模型上） -->
+    <canvas id="draw-canvas"></canvas>
+
+    <!-- 底部批注与缩放控制工具栏 -->
+    <div id="paint-toolbar">
+        <!-- ⭐ 核心升级：支持点击停止旋转/恢复旋转 -->
+        <button class="tool-btn active" id="btn-mode-orbit">🔄 自动旋转 (点击定格)</button>
+        <button class="tool-btn" id="btn-mode-pen">✏️ 自由涂鸦</button>
+        <button class="tool-btn" id="btn-mode-line">📏 辅助直线</button>
+        <button class="tool-btn" id="btn-clear-draw">🧹 清屏</button>
+
+        <div class="zoom-group">
+            <button class="tool-btn zoom-btn" id="btn-zoom-in" title="放大模型">➕ 放大</button>
+            <button class="tool-btn zoom-btn" id="btn-zoom-out" title="缩小模型">➖ 缩小</button>
+            <button class="tool-btn zoom-btn" id="btn-zoom-reset" title="复原大小">↺ 复位</button>
+        </div>
+        
+        <div class="palette">
+            <div class="color-dot active" style="background:#dc2626;" data-color="#dc2626" title="红色"></div>
+            <div class="color-dot" style="background:#2563eb;" data-color="#2563eb" title="蓝色"></div>
+            <div class="color-dot" style="background:#059669;" data-color="#059669" title="绿色"></div>
+            <div class="color-dot" style="background:#1e293b;" data-color="#1e293b" title="黑色"></div>
+        </div>
+    </div>
+
+    <!-- 右侧推导面板（支持伸缩和隐藏） -->
+    <div id="side-panel">
+        <div id="panel-toggle-tab">▶<br>收<br>起<br>推<br>导</div>
+
+        <div class="panel-header">
+            <span class="panel-title" id="m-title">模型推导探究</span>
+            <div class="header-actions">
+                <button class="btn-box-toggle" id="btn-toggle-box">📦 显示长方体补形</button>
+                <button class="btn-back" id="btn-return">放回书本 ↩</button>
+            </div>
+        </div>
+
+        <div class="derivation-box" id="derivation-content"></div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        /* ========================================================
+           1. 控制器 (3D自由观察 + 缩放)
+           ======================================================== */
+        let controlsEnabled = true;
+        class CustomControls {
+            constructor(camera, domElement) {
+                this.camera = camera;
+                this.domElement = domElement;
+                this.target = new THREE.Vector3(0, -0.6, 0);
+                this.minDistance = 3.5;
+                this.maxDistance = 24.0;
+
+                const offset = new THREE.Vector3().subVectors(this.camera.position, this.target);
+                this.radius = offset.length();
+                this.theta = Math.atan2(offset.x, offset.z);
+                this.phi = Math.acos(Math.max(-1, Math.min(1, offset.y / this.radius)));
+
+                this.targetRadius = this.radius;
+                this.targetTheta = this.theta;
+                this.targetPhi = this.phi;
+
+                this.isDown = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.initListeners();
+            }
+
+            initListeners() {
+                window.addEventListener('pointerdown', (e) => {
+                    if (!controlsEnabled || e.target.closest('#side-panel') || e.target.closest('#paint-toolbar') || e.target.closest('#page-nav-bar')) return;
+                    this.isDown = true;
+                    this.lastX = e.clientX;
+                    this.lastY = e.clientY;
+                });
+
+                window.addEventListener('pointermove', (e) => {
+                    if (!this.isDown || !controlsEnabled) return;
+                    const dx = e.clientX - this.lastX;
+                    const dy = e.clientY - this.lastY;
+                    this.lastX = e.clientX;
+                    this.lastY = e.clientY;
+
+                    this.targetTheta -= dx * 0.0055;
+                    this.targetPhi -= dy * 0.0055;
+                    this.targetPhi = Math.max(0.05, Math.min(Math.PI - 0.05, this.targetPhi));
+                });
+
+                window.addEventListener('pointerup', () => { this.isDown = false; });
+
+                window.addEventListener('wheel', (e) => {
+                    if (e.target.closest('#side-panel')) return;
+                    if (activeModel) {
+                        const zoomSpeed = e.ctrlKey ? 0.012 : 0.0025;
+                        applyModelScale(modelScaleFactor - e.deltaY * zoomSpeed);
+                        return;
+                    }
+                    this.targetRadius += e.deltaY * 0.008;
+                    this.targetRadius = Math.max(this.minDistance, Math.min(this.maxDistance, this.targetRadius));
+                }, { passive: true });
+            }
+
+            update() {
+                this.radius += (this.targetRadius - this.radius) * 0.1;
+                this.theta += (this.targetTheta - this.theta) * 0.1;
+                this.phi += (this.targetPhi - this.phi) * 0.1;
+
+                const sinPhi = Math.sin(this.phi);
+                this.camera.position.x = this.target.x + this.radius * sinPhi * Math.sin(this.theta);
+                this.camera.position.y = this.target.y + this.radius * Math.cos(this.phi);
+                this.camera.position.z = this.target.z + this.radius * sinPhi * Math.cos(this.theta);
+                this.camera.lookAt(this.target);
+            }
+        }
+
+        /* ========================================================
+           2. 核心数学模型数据
+           ======================================================== */
+        const MODEL_DATA = [
+            // Page 1
+            {
+                id: 0, page: 1,
+                name: "模型一：直棱柱外接球模型",
+                desc: "底面外接圆半径为 r，直棱柱高为 h",
+                formula: "(2R)^2 = (2r)^2 + h^2 \\implies R = \\sqrt{r^2 + \\left(\\frac{h}{2}\\right)^2}",
+                derivation: `
+                    <h4>【原理】上下底面外心垂直连线法</h4>
+                    1. 设直三棱柱高为 $h$，底面三角形外接圆半径为 $r$。<br>
+                    2. 设上下底面的外心分别为 $O_1, O_2$，由空间对称性可知，外接球球心 $O$ 必定落在中截面上，即为线段 $O_1O_2$ 的中点。<br>
+                    3. 在直角三角形 $\\triangle OO_1A$ 中（$A$ 为顶面任一顶点）：<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 竖直分量：$OO_1 = \\frac{h}{2}$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 水平分量：$O_1A = r$<br>
+                    4. 根据勾股定理直接求得外接球半径：
+                    <div class="formula-highlight">
+                        $$R = \\sqrt{r^2 + \\left(\\frac{h}{2}\\right)^2}$$
+                    </div>
+                `
+            },
+            {
+                id: 1, page: 1,
+                name: "模型二：墙角模型 (三线两两垂直)",
+                desc: "三条棱两两垂直，长分别为 a, b, c",
+                formula: "(2R)^2 = a^2 + b^2 + c^2 \\implies R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2}",
+                derivation: `
+                    <h4>【原理】长方体补形法</h4>
+                    1. 点击右上角<b>【显示长方体补形】</b>按钮可直观观察补形全貌。<br>
+                    2. 三棱锥有三条两两垂直的棱 $OA, OB, OC$，可将其补全为一个长宽高分别为 $a, b, c$ 的标准长方体。<br>
+                    3. 此时三棱锥的 4 个顶点恰好是长方体的 4 个顶点，两者<b>共用同一个外接球</b>。<br>
+                    4. 长方体的体对角线即为外接球的直径 $2R$：
+                    <div class="formula-highlight">
+                        $$R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2}$$
+                    </div>
+                `
+            },
+            {
+                id: 2, page: 1,
+                name: "模型三：对棱相等模型",
+                desc: "三组对棱分别相等，长分别为 x, y, z",
+                formula: "R = \\sqrt{\\frac{x^2 + y^2 + z^2}{8}}",
+                derivation: `
+                    <h4>【原理】长方体表面面对角线嵌入法</h4>
+                    1. 点击右上角<b>【显示/隐藏长方体】</b>可以清晰观察四面体在长方体内的嵌构。<br>
+                    2. 若四面体三组对棱分别相等（长为 $x, y, z$），其恰好对应长方体 6 个表面的面对角线：<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• $a^2 + b^2 = x^2,\\quad b^2 + c^2 = y^2,\\quad c^2 + a^2 = z^2$<br>
+                    3. 三式相加：$2(a^2 + b^2 + c^2) = x^2 + y^2 + z^2$。<br>
+                    4. 外接球半径与长方体外接球相同，代入得：
+                    <div class="formula-highlight">
+                        $$R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2} = \\sqrt{\\frac{x^2 + y^2 + z^2}{8}}$$
+                    </div>
+                `
+            },
+            {
+                id: 3, page: 1,
+                name: "模型四：两直角共斜边模型",
+                desc: "∠BED = ∠BCD = 90°，共用斜边 BD",
+                formula: "2R = BD \\implies R = \\frac{1}{2}BD",
+                derivation: `
+                    <h4>【原理】直角三角形斜边中点性质</h4>
+                    1. 如图所示，$\\triangle BED$ 与 $\\triangle BCD$ 均为直角三角形，共用斜边 $BD$。<br>
+                    2. 取公共斜边 $BD$ 的中点记为 $O$。<br>
+                    3. 由“直角三角形斜边中线等于斜边一半”可知：<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• $OE = OB = OD = \\frac{1}{2}BD$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• $OC = OB = OD = \\frac{1}{2}BD$<br>
+                    4. 点 $O$ 到四面体 4 个顶点的距离全部相等，球心即为斜边中点：
+                    <div class="formula-highlight">
+                        $$R = \\frac{1}{2}BD$$
+                    </div>
+                `
+            },
+
+            // Page 2
+            {
+                id: 4, page: 2,
+                name: "模型五：垂线模型 (一侧棱垂直于底面)",
+                desc: "DG ⊥ 平面 ABG，底面外接圆半径为 r",
+                formula: "R = \\sqrt{r^2 + OO_1^2} = \\sqrt{r^2 + \\left(\\frac{1}{2}DG\\right)^2}",
+                derivation: `
+                    <h4>【原理】小圆面与过直径截面法</h4>
+                    1. 将 $\\triangle ABG$ 画在球的小圆面上，作小圆的直径 $GF$。<br>
+                    2. 连接 $DF$，则线段 $DF$ 必经过球心 $O$。<br>
+                    3. 作 $OO_1 \\perp \\text{平面 } ABG$，计算小圆半径 $r = O_1F$（由正弦定理 $\\frac{a}{\\sin A} = 2r$）。<br>
+                    4. 竖直方向平分高：$OO_1 = \\frac{1}{2}DG$。<br>
+                    5. 在 Rt$\\triangle OO_1F$ 中应用勾股定理：
+                    <div class="formula-highlight">
+                        $$R = \\sqrt{r^2 + OO_1^2} = \\sqrt{r^2 + \\left(\\frac{1}{2}DG\\right)^2}$$
+                    </div>
+                `
+            },
+            {
+                id: 5, page: 2,
+                name: "模型六：等腰棱锥模型 (正三棱锥)",
+                desc: "三棱锥 J-ABC 中，侧棱长 JA = JB = JC = a",
+                formula: "R = \\frac{a^2}{2h} = \\frac{r^2 + h^2}{2h}",
+                derivation: `
+                    <h4>【原理】旋转对称轴心勾股方程法</h4>
+                    1. 设 $O_1$ 为底面 $\\triangle ABC$ 的外心，连结 $JO_1$，则 $JO_1 \\perp \\text{平面 } ABC$。<br>
+                    2. 计算底面小圆半径 $r$ 及棱锥的高：$JO_1 = h = \\sqrt{a^2 - r^2}$。<br>
+                    3. 因为 $OA = JO = R$，所以球心到截面距离 $OO_1 = |JO_1 - R| = |h - R|$。<br>
+                    4. 在 Rt$\\triangle OO_1A$ 中利用勾股定理：$R^2 = r^2 + (h - R)^2$。<br>
+                    5. 展开消去 $R^2$ 后解得：
+                    <div class="formula-highlight">
+                        $$R = \\frac{a^2}{2h} = \\frac{r^2 + h^2}{2h}$$
+                    </div>
+                `
+            },
+            {
+                id: 6, page: 2,
+                name: "模型七：双面定位模型 (面面垂直三棱锥)",
+                desc: "面 PAB ⊥ 面 ABC，交线为 AB，两面外心垂线交于球心",
+                formula: "R^2 = r_1^2 + r_2^2 - \\left(\\frac{AB}{2}\\right)^2",
+                derivation: `
+                    <h4>【原理】空间两面相交定位球心法</h4>
+                    1. 3D模型中包含<b>两个相互垂直的面</b>：垂直立面 $\\triangle PAB$ 与 水平底面 $\\triangle ABC$（两面交线为 $AB$）。<br>
+                    2. 面 $PAB$ 的外接圆圆心为 $O_1$（半径为 $r_1$）；面 $ABC$ 的外接圆圆心为 $O_2$（半径为 $r_2$）。<br>
+                    3. 过 $O_1$ 作面 $PAB$ 的垂线，过 $O_2$ 作面 $ABC$ 的垂线，两线相交于点 $O$，即为<b>外接球球心</b>！<br>
+                    4. 取公共弦 $AB$ 中点 $M$（$AB = l$），四边形 $O-O_1-M-O_2$ 为<b>标准矩形</b>：<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• $OO_1 = O_2M = \\sqrt{r_2^2 - (l/2)^2}$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 在 Rt$\\triangle OO_1P$ 中，$R^2 = r_1^2 + OO_1^2$<br>
+                    5. 代入即得经典公式：
+                    <div class="formula-highlight">
+                        $$R^2 = r_1^2 + r_2^2 - \\left(\\frac{AB}{2}\\right)^2$$
+                    </div>
+                `
+            }
+        ];
+
+        /* ========================================================
+           3. 高清矢量教科书插图绘制
+           ======================================================== */
+        function drawLine(ctx, x1, y1, x2, y2, isDash = false, color = "#261d15", width = 3.5) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width;
+            ctx.lineCap = "round"; ctx.lineJoin = "round";
+            if (isDash) ctx.setLineDash([10, 8]);
+            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+        }
+
+        function drawText(ctx, text, x, y, color = "#261d15", font = "bold 34px 'KaiTi', 'STKaiti', serif") {
+            ctx.save(); ctx.font = font; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(text, x, y); ctx.restore();
+        }
+
+        function drawRightAngle(ctx, ox, oy, ax, ay, bx, by, size = 18) {
+            const v1x = (ax - ox), v1y = (ay - oy); const l1 = Math.hypot(v1x, v1y);
+            const u1x = (v1x / l1) * size, u1y = (v1y / l1) * size;
+            const v2x = (bx - ox), v2y = (by - oy); const l2 = Math.hypot(v2x, v2y);
+            const u2x = (v2x / l2) * size, u2y = (v2y / l2) * size;
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "#854d0e"; ctx.lineWidth = 3;
+            ctx.moveTo(ox + u1x, oy + u1y); ctx.lineTo(ox + u1x + u2x, oy + u1y + u2y); ctx.lineTo(ox + u2x, oy + u2y);
+            ctx.stroke(); ctx.restore();
+        }
+
+        function drawPrismDiagram(ctx, cx, cy) {
+            const h = 170;
+            const T1 = {x: cx - 100, y: cy - h/2 + 20}, T2 = {x: cx + 100, y: cy - h/2 + 20}, T3 = {x: cx + 20, y: cy - h/2 - 35};
+            const B1 = {x: T1.x, y: T1.y + h}, B2 = {x: T2.x, y: T2.y + h}, B3 = {x: T3.x, y: T3.y + h};
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 135, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            drawLine(ctx, T3.x, T3.y, B3.x, B3.y, true); drawLine(ctx, B1.x, B1.y, B3.x, B3.y, true); drawLine(ctx, B2.x, B2.y, B3.x, B3.y, true);
+            drawLine(ctx, T1.x, T1.y, T2.x, T2.y); drawLine(ctx, T2.x, T2.y, T3.x, T3.y); drawLine(ctx, T3.x, T3.y, T1.x, T1.y);
+            drawLine(ctx, B1.x, B1.y, B2.x, B2.y); drawLine(ctx, T1.x, T1.y, B1.x, B1.y); drawLine(ctx, T2.x, T2.y, B2.x, B2.y);
+
+            drawText(ctx, "A'", T1.x - 22, T1.y); drawText(ctx, "B'", T2.x + 22, T2.y); drawText(ctx, "A", B1.x - 20, B1.y + 8); drawText(ctx, "B", B2.x + 20, B2.y + 8);
+        }
+
+        function drawCornerDiagram(ctx, cx, cy) {
+            const O = {x: cx - 40, y: cy + 30}, A = {x: cx + 110, y: cy + 30}, B = {x: cx - 40, y: cy - 100}, C = {x: cx - 110, y: cy + 95};
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 135, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            drawLine(ctx, O.x, O.y, B.x, B.y, true); drawLine(ctx, O.x, O.y, A.x, A.y, true); drawLine(ctx, O.x, O.y, C.x, C.y, true);
+            drawLine(ctx, A.x, A.y, B.x, B.y, false, "#9a3412", 4); drawLine(ctx, B.x, B.y, C.x, C.y, false, "#9a3412", 4); drawLine(ctx, C.x, C.y, A.x, A.y, false, "#9a3412", 4);
+            drawRightAngle(ctx, O.x, O.y, A.x, A.y, B.x, B.y, 16); drawRightAngle(ctx, O.x, O.y, C.x, C.y, B.x, B.y, 16);
+            drawText(ctx, "O", O.x + 20, O.y - 12); drawText(ctx, "A", A.x + 22, A.y); drawText(ctx, "B", B.x, B.y - 20); drawText(ctx, "C", C.x - 20, C.y + 12);
+        }
+
+        function drawEqualEdgeDiagram(ctx, cx, cy) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 135, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            const w = 85, h = 70, d = 50;
+            const p1 = {x: cx - w - d/2, y: cy - h + d/2}, p2 = {x: cx + w - d/2, y: cy - h + d/2}, p3 = {x: cx + w - d/2, y: cy + h + d/2}, p4 = {x: cx - w - d/2, y: cy + h + d/2};
+            const p7 = {x: p3.x + d, y: p3.y - d}, p8 = {x: p4.x + d, y: p4.y - d};
+            drawLine(ctx, p1.x, p1.y, p7.x, p7.y, false, "#b45309", 4); drawLine(ctx, p2.x, p2.y, p8.x, p8.y, false, "#b45309", 4);
+            drawLine(ctx, p1.x, p1.y, p2.x, p2.y, false, "#b45309", 4); drawLine(ctx, p7.x, p7.y, p8.x, p8.y, false, "#b45309", 4);
+            drawLine(ctx, p1.x, p1.y, p8.x, p8.y, true, "#b45309", 4); drawLine(ctx, p2.x, p2.y, p7.x, p7.y, false, "#b45309", 4);
+            drawText(ctx, "x", cx, cy - 75, "#9a3412"); drawText(ctx, "y", cx + 65, cy + 30, "#9a3412"); drawText(ctx, "z", cx - 75, cy + 30, "#9a3412");
+        }
+
+        function drawHypotenuseDiagram(ctx, cx, cy) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 135, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            const B = {x: cx - 110, y: cy + 10}, D = {x: cx + 110, y: cy + 10}, E = {x: cx, y: cy - 90}, C = {x: cx + 25, y: cy + 85}, O = {x: cx, y: cy + 10};
+            drawLine(ctx, B.x, B.y, D.x, D.y, true, "#6d28d9", 4.5);
+            drawLine(ctx, B.x, B.y, E.x, E.y, false, "#1d4ed8", 3.8); drawLine(ctx, E.x, E.y, D.x, D.y, false, "#1d4ed8", 3.8);
+            drawLine(ctx, B.x, B.y, C.x, C.y, false, "#1d4ed8", 3.8); drawLine(ctx, C.x, C.y, D.x, D.y, false, "#1d4ed8", 3.8);
+            drawLine(ctx, E.x, E.y, C.x, C.y, true, "#4338ca", 3);
+            ctx.beginPath(); ctx.arc(O.x, O.y, 6, 0, Math.PI * 2); ctx.fillStyle = "#dc2626"; ctx.fill();
+            drawText(ctx, "B", B.x - 20, B.y); drawText(ctx, "D", D.x + 20, D.y); drawText(ctx, "O", O.x, O.y - 18, "#dc2626");
+        }
+
+        function drawVerticalModelDiagram(ctx, cx, cy) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 140, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.5)"; ctx.lineWidth = 2.5; ctx.setLineDash([6, 6]);
+            ctx.ellipse(cx, cy + 45, 125, 40, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            const D = {x: cx - 75, y: cy - 100}, G = {x: cx - 75, y: cy + 45}, F = {x: cx + 75, y: cy + 45};
+            const O1 = {x: cx, y: cy + 45}, O = {x: cx, y: cy - 28}, A = {x: cx - 110, y: cy + 50}, B = {x: cx + 115, y: cy + 40};
+
+            drawLine(ctx, D.x, D.y, G.x, G.y, false, "#059669", 4);
+            drawLine(ctx, G.x, G.y, F.x, F.y, true, "#2563eb", 3);
+            drawLine(ctx, D.x, D.y, F.x, F.y, true, "#dc2626", 3.5);
+            drawLine(ctx, O.x, O.y, O1.x, O1.y, true, "#854d0e", 3);
+
+            drawLine(ctx, D.x, D.y, A.x, A.y, false, "#332417", 3);
+            drawLine(ctx, D.x, D.y, B.x, B.y, false, "#332417", 3);
+            drawLine(ctx, A.x, A.y, G.x, G.y, false, "#332417", 2.5);
+            drawLine(ctx, G.x, G.y, B.x, B.y, true, "#332417", 2.5);
+
+            ctx.beginPath(); ctx.arc(O.x, O.y, 6, 0, Math.PI * 2); ctx.fillStyle = "#dc2626"; ctx.fill();
+            ctx.beginPath(); ctx.arc(O1.x, O1.y, 5, 0, Math.PI * 2); ctx.fillStyle = "#2563eb"; ctx.fill();
+
+            drawText(ctx, "D", D.x, D.y - 20, "#059669");
+            drawText(ctx, "G", G.x - 22, G.y);
+            drawText(ctx, "F", F.x + 22, F.y);
+            drawText(ctx, "O", O.x + 18, O.y, "#dc2626");
+        }
+
+        function drawIsoscelesModelDiagram(ctx, cx, cy) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 140, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.5)"; ctx.lineWidth = 2.5; ctx.setLineDash([6, 6]);
+            ctx.ellipse(cx, cy + 50, 120, 36, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            const J = {x: cx, y: cy - 115}, O1 = {x: cx, y: cy + 50}, O = {x: cx, y: cy - 10};
+            const A = {x: cx + 55, y: cy + 72}, B = {x: cx + 110, y: cy + 45}, C = {x: cx - 110, y: cy + 45};
+
+            drawLine(ctx, J.x, J.y, O1.x, O1.y, true, "#dc2626", 3.5);
+            drawLine(ctx, J.x, J.y, A.x, A.y, false, "#b45309", 4);
+            drawLine(ctx, J.x, J.y, B.x, B.y, false, "#b45309", 4);
+            drawLine(ctx, J.x, J.y, C.x, C.y, false, "#b45309", 4);
+            drawLine(ctx, C.x, C.y, A.x, A.y, false, "#4338ca", 3);
+            drawLine(ctx, A.x, A.y, B.x, B.y, false, "#4338ca", 3);
+            drawLine(ctx, C.x, C.y, B.x, B.y, true, "#4338ca", 3);
+
+            ctx.beginPath(); ctx.arc(O.x, O.y, 6, 0, Math.PI * 2); ctx.fillStyle = "#dc2626"; ctx.fill();
+            drawText(ctx, "J", J.x, J.y - 20, "#b45309");
+            drawText(ctx, "O", O.x + 22, O.y, "#dc2626");
+        }
+
+        function drawDualPlaneDiagram(ctx, cx, cy) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(78, 62, 45, 0.35)"; ctx.lineWidth = 3; ctx.setLineDash([8, 8]);
+            ctx.arc(cx, cy, 140, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(180, 83, 9, 0.4)"; ctx.lineWidth = 2.5; ctx.setLineDash([6, 6]);
+            ctx.ellipse(cx, cy + 40, 125, 42, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = "rgba(2, 132, 199, 0.4)"; ctx.lineWidth = 2.5; ctx.setLineDash([6, 6]);
+            ctx.ellipse(cx - 15, cy - 25, 48, 120, -Math.PI / 12, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+
+            const P = {x: cx - 20, y: cy - 110};
+            const A = {x: cx - 110, y: cy + 40};
+            const B = {x: cx + 70, y: cy + 25};
+            const C = {x: cx + 10, y: cy + 78};
+            const O = {x: cx, y: cy - 10};
+            const O1 = {x: cx - 20, y: cy - 15};
+            const O2 = {x: cx - 10, y: cy + 45};
+
+            drawLine(ctx, P.x, P.y, A.x, A.y, false, "#0284c7", 4);
+            drawLine(ctx, P.x, P.y, B.x, B.y, false, "#0284c7", 4);
+            drawLine(ctx, A.x, A.y, B.x, B.y, true, "#7c3aed", 4.5);
+            drawLine(ctx, A.x, A.y, C.x, C.y, false, "#d97706", 3.8);
+            drawLine(ctx, B.x, B.y, C.x, C.y, false, "#d97706", 3.8);
+            drawLine(ctx, P.x, P.y, C.x, C.y, false, "#1e293b", 3.2);
+
+            drawLine(ctx, O1.x, O1.y, O.x, O.y, true, "#dc2626", 3);
+            drawLine(ctx, O2.x, O2.y, O.x, O.y, true, "#dc2626", 3);
+
+            ctx.beginPath(); ctx.arc(O.x, O.y, 6.5, 0, Math.PI * 2); ctx.fillStyle = "#dc2626"; ctx.fill();
+            drawText(ctx, "P", P.x, P.y - 18, "#0284c7");
+            drawText(ctx, "A", A.x - 22, A.y);
+            drawText(ctx, "B", B.x + 22, B.y);
+            drawText(ctx, "C", C.x + 18, C.y + 12, "#d97706");
+            drawText(ctx, "O", O.x + 20, O.y - 12, "#dc2626");
+            drawText(ctx, "面PAB ⊥ 面ABC", cx, cy + 120, "#854d0e", "bold 26px 'KaiTi', serif");
+        }
+
+        /* ========================================================
+           4. 课本材质生成
+           ======================================================== */
+        function createBookPagesTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 512;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = "#d8caa4"; ctx.fillRect(0, 0, 128, 512);
+            for (let y = 0; y < 512; y += 2) {
+                const alpha = (Math.sin(y * 0.9) * 0.15 + 0.25) + Math.random() * 0.12;
+                ctx.strokeStyle = `rgba(130, 110, 85, ${alpha})`;
+                ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke();
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(12, 1);
+            return tex;
+        }
+
+        function createCoverTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 2048; canvas.height = 2880;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 2048, 2880);
+            grad.addColorStop(0, '#ba9f7b'); grad.addColorStop(0.5, '#c9af8b'); grad.addColorStop(1, '#a68a65');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 2048, 2880);
+
+            ctx.fillStyle = "#f6f0e4"; ctx.fillRect(0, 160, 2048, 12);
+            ctx.font = "bold 64px 'KaiTi', serif"; ctx.fillText("普通高中教科书", 160, 120);
+            ctx.fillStyle = "#342211"; ctx.font = "bold 260px 'KaiTi', serif"; ctx.fillText("数 学", 240, 660);
+            ctx.font = "bold 88px 'KaiTi', serif"; ctx.fillStyle = "#8a3a08"; ctx.fillText("必修  第二册 · 立体几何专栏", 250, 840);
+            ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.arc(1024, 1720, 480, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#3d2a17"; ctx.font = "72px 'KaiTi', serif"; ctx.fillText("人民教育出版社", 780, 2680);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createPage1Texture() {
+            const canvas = document.createElement('canvas'); canvas.width = 2048; canvas.height = 2880;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#e6dccb"; ctx.fillRect(0, 0, 2048, 2880);
+            ctx.strokeStyle = "#c2b29a"; ctx.lineWidth = 12; ctx.strokeRect(60, 60, 1928, 2760);
+
+            ctx.fillStyle = "#2d523a"; ctx.fillRect(120, 110, 600, 110);
+            ctx.fillStyle = "#e9dec9"; ctx.font = "bold 64px 'KaiTi', serif"; ctx.fillText("📌 经典模型汇总 (一)", 160, 185);
+
+            const startY = 260, rowH = 620;
+            MODEL_DATA.slice(0, 4).forEach((item, idx) => {
+                const y = startY + idx * rowH;
+                ctx.fillStyle = idx % 2 === 0 ? "#ddcfbc" : "#e4d8c6";
+                ctx.fillRect(120, y, 1808, rowH - 40);
+                ctx.fillStyle = "#2d523a"; ctx.fillRect(120, y, 16, rowH - 40);
+
+                ctx.fillStyle = "#1e1309"; ctx.font = "bold 54px 'KaiTi', serif"; ctx.fillText(item.name, 170, y + 100);
+                ctx.font = "42px 'KaiTi', serif"; ctx.fillStyle = "#533e2d"; ctx.fillText(item.desc, 170, y + 195);
+
+                const cleanFormulas = [
+                    "R = √( r² + (h/2)² )", "R = √( a² + b² + c² ) / 2",
+                    "R = √( x² + y² + z² ) / (2√2)", "R = BD / 2"
+                ];
+                ctx.font = "bold 44px 'Courier New', monospace"; ctx.fillStyle = "#8f1919";
+                ctx.fillText("公式: " + cleanFormulas[idx], 170, y + 295);
+
+                ctx.fillStyle = "#1d4ed8"; ctx.fillRect(170, y + 365, 380, 80);
+                ctx.fillStyle = "#f6ede0"; ctx.font = "bold 36px 'KaiTi', serif"; ctx.fillText("🔍 点击长出3D模型", 200, y + 420);
+
+                const cx = 1620, cy = y + 250;
+                if (idx === 0) drawPrismDiagram(ctx, cx, cy);
+                else if (idx === 1) drawCornerDiagram(ctx, cx, cy);
+                else if (idx === 2) drawEqualEdgeDiagram(ctx, cx, cy);
+                else if (idx === 3) drawHypotenuseDiagram(ctx, cx, cy);
+            });
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createPage2Texture() {
+            const canvas = document.createElement('canvas'); canvas.width = 2048; canvas.height = 2880;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#e6dccb"; ctx.fillRect(0, 0, 2048, 2880);
+            ctx.strokeStyle = "#c2b29a"; ctx.lineWidth = 12; ctx.strokeRect(60, 60, 1928, 2760);
+
+            ctx.fillStyle = "#e4ab6b"; ctx.fillRect(120, 110, 1808, 110);
+            ctx.fillStyle = "#341d06"; ctx.font = "bold 66px 'KaiTi', serif"; ctx.textAlign = "center";
+            ctx.fillText("外 接 球 模 型  ( 二 )", 1024, 185);
+            ctx.textAlign = "left";
+
+            const startY = 260, rowH = 820;
+            MODEL_DATA.slice(4, 7).forEach((item, idx) => {
+                const y = startY + idx * rowH;
+                ctx.fillStyle = idx % 2 === 0 ? "#ddcfbc" : "#e4d8c6";
+                ctx.fillRect(120, y, 1808, rowH - 50);
+                ctx.fillStyle = "#c2410c"; ctx.fillRect(120, y, 18, rowH - 50);
+
+                ctx.fillStyle = "#1e1309"; ctx.font = "bold 58px 'KaiTi', serif"; ctx.fillText(item.name, 170, y + 110);
+                ctx.font = "42px 'KaiTi', serif"; ctx.fillStyle = "#533e2d"; ctx.fillText(item.desc, 170, y + 210);
+
+                const cleanFormulas2 = [
+                    "R = √( r² + (1/2 DG)² )",
+                    "R = a² / (2h) = (r² + h²) / (2h)",
+                    "R² = r₁² + r₂² - (AB/2)²"
+                ];
+                ctx.font = "bold 44px 'Courier New', monospace"; ctx.fillStyle = "#8f1919";
+                ctx.fillText("计算公式: " + cleanFormulas2[idx], 170, y + 330);
+
+                ctx.fillStyle = "#b45309"; ctx.fillRect(170, y + 430, 400, 90);
+                ctx.fillStyle = "#f6ede0"; ctx.font = "bold 38px 'KaiTi', serif"; ctx.fillText("🔍 点击长出3D模型", 205, y + 490);
+
+                const cx = 1580, cy = y + 350;
+                if (idx === 0) drawVerticalModelDiagram(ctx, cx, cy);
+                else if (idx === 1) drawIsoscelesModelDiagram(ctx, cx, cy);
+                else if (idx === 2) drawDualPlaneDiagram(ctx, cx, cy);
+            });
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        /* ========================================================
+           5. 3D 几何实体构造
+           ======================================================== */
+        function createThickLine(p1, p2, radius = 0.032, color = 0x1e293b) {
+            const dir = new THREE.Vector3().subVectors(p2, p1);
+            const len = dir.length();
+            const geo = new THREE.CylinderGeometry(radius, radius, len, 12);
+            const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.2 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(p1).addScaledVector(dir, 0.5);
+            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            return mesh;
+        }
+
+        function createTextSprite(text, color = '#1e293b') {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.font = "bold 76px 'KaiTi', serif"; ctx.fillStyle = color;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 64, 64);
+            const tex = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+            sprite.scale.set(0.46, 0.46, 1);
+            return sprite;
+        }
+
+        function createSphereShell(radius) {
+            const group = new THREE.Group();
+            const sphere = new THREE.Mesh(
+                new THREE.SphereGeometry(radius, 40, 32),
+                new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.22, roughness: 0.1, depthWrite: false })
+            );
+            group.add(sphere);
+
+            const ringGeo = new THREE.TorusGeometry(radius, 0.016, 8, 64);
+            const equator = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
+            equator.rotation.x = Math.PI / 2; group.add(equator);
+
+            const meridian = equator.clone(); meridian.rotation.y = Math.PI / 2; group.add(meridian);
+
+            const center = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
+            group.add(center);
+
+            const labelO = createTextSprite("O", "#dc2626");
+            labelO.position.set(0, 0.22, 0); group.add(labelO);
+            return group;
+        }
+
+        function addVertices(group, points, color = 0xd97706) {
+            points.forEach(p => {
+                const dot = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 12), new THREE.MeshBasicMaterial({ color }));
+                dot.position.copy(p);
+                group.add(dot);
+            });
+        }
+
+        function createProminentCuboid(a, b, c, usedIndices = []) {
+            const cuboidGroup = new THREE.Group();
+            const boxMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(a, b, c),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0x38bdf8,
+                    transparent: true,
+                    opacity: 0.28,
+                    roughness: 0.15,
+                    metalness: 0.1,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                })
+            );
+            cuboidGroup.add(boxMesh);
+
+            const V = [
+                new THREE.Vector3(-a/2, -b/2, -c/2),
+                new THREE.Vector3( a/2, -b/2, -c/2),
+                new THREE.Vector3( a/2,  b/2, -c/2),
+                new THREE.Vector3(-a/2,  b/2, -c/2),
+                new THREE.Vector3(-a/2, -b/2,  c/2),
+                new THREE.Vector3( a/2, -b/2,  c/2),
+                new THREE.Vector3( a/2,  b/2,  c/2),
+                new THREE.Vector3(-a/2,  b/2,  c/2)
+            ];
+
+            const edgeIndices = [
+                0,1,  1,2,  2,3,  3,0,
+                4,5,  5,6,  6,7,  7,4,
+                0,4,  1,5,  2,6,  3,7
+            ];
+            for (let i = 0; i < edgeIndices.length; i += 2) {
+                cuboidGroup.add(createThickLine(V[edgeIndices[i]], V[edgeIndices[i+1]], 0.024, 0x0284c7));
+            }
+
+            V.forEach((pt, idx) => {
+                const isTetra = usedIndices.includes(idx);
+                const col = isTetra ? 0xf59e0b : 0x64748b;
+                const r = isTetra ? 0.075 : 0.055;
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 14), new THREE.MeshBasicMaterial({ color: col }));
+                sphere.position.copy(pt);
+                cuboidGroup.add(sphere);
+            });
+
+            return { cuboidGroup, vertices: V };
+        }
+
+        function build3DPrism() {
+            const g = new THREE.Group(); g.add(createSphereShell(1.6));
+            const r = 1.25, h = 2.0; const topY = h/2, botY = -h/2; const angles = [0, 2.1, 4.2];
+            const T = angles.map(a => new THREE.Vector3(Math.cos(a)*r, topY, Math.sin(a)*r));
+            const B = angles.map(a => new THREE.Vector3(Math.cos(a)*r, botY, Math.sin(a)*r));
+            const col = 0x0f172a;
+            g.add(createThickLine(T[0], T[1], 0.03, col)); g.add(createThickLine(T[1], T[2], 0.03, col)); g.add(createThickLine(T[2], T[0], 0.03, col));
+            g.add(createThickLine(B[0], B[1], 0.03, col)); g.add(createThickLine(B[1], B[2], 0.03, col)); g.add(createThickLine(B[2], B[0], 0.03, col));
+            g.add(createThickLine(T[0], B[0], 0.03, col)); g.add(createThickLine(T[1], B[1], 0.03, col)); g.add(createThickLine(T[2], B[2], 0.03, col));
+            addVertices(g, [...T, ...B], 0x059669); return g;
+        }
+
+        function build3DCorner() {
+            const g = new THREE.Group(); const a = 1.8, b = 1.4, c = 2.0;
+            g.add(createSphereShell(Math.sqrt(a*a+b*b+c*c)/2));
+
+            const { cuboidGroup, vertices } = createProminentCuboid(a, b, c, [0, 1, 3, 4]);
+            cuboidGroup.visible = false;
+            g.add(cuboidGroup);
+            g.userData.cuboid = cuboidGroup;
+
+            const O = vertices[0], A = vertices[1], B = vertices[3], C = vertices[4];
+            const pyr = [O, A,  O, B,  O, C,  A, B,  B, C,  C, A];
+            for (let i = 0; i < pyr.length; i += 2) g.add(createThickLine(pyr[i], pyr[i+1], 0.04, 0xdc2626));
+            addVertices(g, [O, A, B, C], 0xdc2626);
+
+            const sO = createTextSprite("O", "#dc2626"); sO.position.set(O.x - 0.22, O.y - 0.22, O.z); g.add(sO);
+            const sA = createTextSprite("A", "#1e293b"); sA.position.set(A.x + 0.22, A.y, A.z); g.add(sA);
+            const sB = createTextSprite("B", "#1e293b"); sB.position.set(B.x, B.y + 0.22, B.z); g.add(sB);
+            const sC = createTextSprite("C", "#1e293b"); sC.position.set(C.x, C.y, C.z + 0.22); g.add(sC);
+            return g;
+        }
+
+        function build3DEqualEdge() {
+            const g = new THREE.Group(); const a = 1.8, b = 1.5, c = 2.0;
+            g.add(createSphereShell(Math.sqrt(a*a+b*b+c*c)/2));
+
+            const { cuboidGroup, vertices } = createProminentCuboid(a, b, c, [0, 2, 5, 7]);
+            cuboidGroup.visible = true;
+            g.add(cuboidGroup);
+            g.userData.cuboid = cuboidGroup;
+
+            const V1 = vertices[0], V2 = vertices[2], V3 = vertices[5], V4 = vertices[7];
+            const tet = [V1, V2,  V1, V3,  V1, V4,  V2, V3,  V3, V4,  V4, V2];
+            for (let i = 0; i < tet.length; i += 2) g.add(createThickLine(tet[i], tet[i+1], 0.042, 0xd97706));
+            addVertices(g, [V1, V2, V3, V4], 0xd97706);
+
+            const sX = createTextSprite("x", "#b45309"); sX.position.set(0, b/2 + 0.2, 0); g.add(sX);
+            return g;
+        }
+
+        function build3DHypotenuse() {
+            const g = new THREE.Group(); const R = 1.6; g.add(createSphereShell(R));
+            const B = new THREE.Vector3(-R, 0, 0), D = new THREE.Vector3(R, 0, 0), E = new THREE.Vector3(0, R * 0.8, R * 0.6), C = new THREE.Vector3(0.4, -R * 0.7, 1.07);
+            g.add(createThickLine(B, D, 0.046, 0x7c3aed));
+            const edges = [B, E,  E, D,  B, C,  C, D,  E, C];
+            for (let i = 0; i < edges.length; i += 2) g.add(createThickLine(edges[i], edges[i+1], 0.034, 0x2563eb));
+            addVertices(g, [B, D, E, C], 0x7c3aed); return g;
+        }
+
+        function build3DVertical() {
+            const g = new THREE.Group(); const R = 1.6; g.add(createSphereShell(R));
+            const r = 1.3, h = 1.85; const botY = -h/2;
+            const G = new THREE.Vector3(-r, botY, 0), F = new THREE.Vector3(r, botY, 0), D = new THREE.Vector3(-r, h/2, 0);
+            const A = new THREE.Vector3(r * Math.cos(2.2), botY, r * Math.sin(2.2));
+            const B = new THREE.Vector3(r * Math.cos(-0.8), botY, r * Math.sin(-0.8));
+            const O1 = new THREE.Vector3(0, botY, 0);
+
+            g.add(createThickLine(D, G, 0.045, 0x059669));
+            g.add(createThickLine(G, F, 0.03, 0x2563eb));
+            g.add(createThickLine(D, F, 0.038, 0xdc2626));
+            g.add(createThickLine(new THREE.Vector3(0, 0, 0), O1, 0.03, 0xb45309));
+
+            g.add(createThickLine(D, A, 0.032, 0x1e293b));
+            g.add(createThickLine(D, B, 0.032, 0x1e293b));
+            g.add(createThickLine(A, G, 0.03, 0x1e293b));
+            g.add(createThickLine(G, B, 0.03, 0x1e293b));
+            g.add(createThickLine(A, B, 0.03, 0x1e293b));
+
+            addVertices(g, [D, G, F, A, B], 0x059669);
+            const sD = createTextSprite("D", "#059669"); sD.position.set(-r, h/2 + 0.25, 0); g.add(sD);
+            const sG = createTextSprite("G", "#1e293b"); sG.position.set(-r - 0.25, botY, 0); g.add(sG);
+            const sF = createTextSprite("F", "#2563eb"); sF.position.set(r + 0.25, botY, 0); g.add(sF);
+            return g;
+        }
+
+        function build3DIsosceles() {
+            const g = new THREE.Group(); const R = 1.6; g.add(createSphereShell(R));
+            const H = 2.2; const r = Math.sqrt(2 * R * H - H * H) || 1.15;
+            const botY = R - H; const J = new THREE.Vector3(0, R, 0);
+            const angles = [0, 2.094, 4.188];
+            const basePts = angles.map(a => new THREE.Vector3(Math.cos(a) * r, botY, Math.sin(a) * r));
+            const O1 = new THREE.Vector3(0, botY, 0);
+
+            g.add(createThickLine(J, O1, 0.04, 0xdc2626));
+            basePts.forEach(pt => g.add(createThickLine(J, pt, 0.038, 0xd97706)));
+            g.add(createThickLine(basePts[0], basePts[1], 0.032, 0x2563eb));
+            g.add(createThickLine(basePts[1], basePts[2], 0.032, 0x2563eb));
+            g.add(createThickLine(basePts[2], basePts[0], 0.032, 0x2563eb));
+
+            addVertices(g, [J, ...basePts], 0xd97706);
+            const sJ = createTextSprite("J", "#b45309"); sJ.position.set(0, R + 0.28, 0); g.add(sJ);
+            return g;
+        }
+
+        function build3DDualPlane() {
+            const g = new THREE.Group();
+            const R = 1.6;
+            g.add(createSphereShell(R));
+
+            const y0 = -0.55;
+            const z0 = 0.45;
+            const x0 = Math.sqrt(R*R - y0*y0 - z0*z0);
+
+            const A = new THREE.Vector3(-x0, y0, z0);
+            const B = new THREE.Vector3( x0, y0, z0);
+            const r1 = Math.sqrt(R*R - z0*z0);
+            const P = new THREE.Vector3(0, r1, z0);
+            const r2 = Math.sqrt(R*R - y0*y0);
+            const C = new THREE.Vector3(0, y0, -r2);
+
+            const O = new THREE.Vector3(0, 0, 0);
+            const O1 = new THREE.Vector3(0, 0, z0);
+            const O2 = new THREE.Vector3(0, y0, 0);
+            const M = new THREE.Vector3(0, y0, z0);
+
+            function createFacet(vA, vB, vC, color, opacity = 0.35) {
+                const geom = new THREE.BufferGeometry();
+                const pos = new Float32Array([
+                    vA.x, vA.y, vA.z,
+                    vB.x, vB.y, vB.z,
+                    vC.x, vC.y, vC.z
+                ]);
+                geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                geom.computeVertexNormals();
+                const mat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity, depthWrite: false });
+                return new THREE.Mesh(geom, mat);
+            }
+            g.add(createFacet(P, A, B, 0x0284c7, 0.4));
+            g.add(createFacet(C, A, B, 0xf59e0b, 0.35));
+
+            g.add(createThickLine(A, B, 0.046, 0x7c3aed));
+            g.add(createThickLine(P, A, 0.038, 0x0284c7));
+            g.add(createThickLine(P, B, 0.038, 0x0284c7));
+            g.add(createThickLine(A, C, 0.036, 0xd97706));
+            g.add(createThickLine(B, C, 0.036, 0xd97706));
+            g.add(createThickLine(P, C, 0.032, 0x1e293b));
+
+            g.add(createThickLine(O, O1, 0.03, 0xdc2626));
+            g.add(createThickLine(O, O2, 0.03, 0xdc2626));
+            g.add(createThickLine(O1, M, 0.024, 0x854d0e));
+            g.add(createThickLine(O2, M, 0.024, 0x854d0e));
+
+            addVertices(g, [P, A, B, C], 0x7c3aed);
+            const dotO1 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), new THREE.MeshBasicMaterial({ color: 0x0284c7 }));
+            dotO1.position.copy(O1); g.add(dotO1);
+            const dotO2 = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), new THREE.MeshBasicMaterial({ color: 0xd97706 }));
+            dotO2.position.copy(O2); g.add(dotO2);
+            const dotM = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), new THREE.MeshBasicMaterial({ color: 0x854d0e }));
+            dotM.position.copy(M); g.add(dotM);
+
+            const sP = createTextSprite("P", "#0284c7"); sP.position.set(P.x, P.y + 0.28, P.z); g.add(sP);
+            const sA = createTextSprite("A", "#1e293b"); sA.position.set(A.x - 0.25, A.y, A.z); g.add(sA);
+            const sB = createTextSprite("B", "#1e293b"); sB.position.set(B.x + 0.25, B.y, B.z); g.add(sB);
+            const sC = createTextSprite("C", "#d97706"); sC.position.set(C.x, C.y - 0.25, C.z - 0.2); g.add(sC);
+            const sO1 = createTextSprite("O₁", "#0284c7"); sO1.position.set(O1.x - 0.24, O1.y + 0.15, O1.z); g.add(sO1);
+            const sO2 = createTextSprite("O₂", "#d97706"); sO2.position.set(O2.x + 0.24, O2.y, O2.z - 0.15); g.add(sO2);
+            const sM = createTextSprite("M", "#854d0e"); sM.position.set(M.x + 0.2, M.y + 0.15, M.z); g.add(sM);
+
+            return g;
+        }
+
+        /* ========================================================
+           6. 场景初始化与双页书本体系
+           ======================================================== */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 8.5, 15.0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new CustomControls(camera, renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xfffbf2, 0.72));
+        const dirLight = new THREE.DirectionalLight(0xfff5ea, 0.55);
+        dirLight.position.set(8, 16, 10);
+        scene.add(dirLight);
+
+        const BOOK_NORMAL_Y = -1.2;
+        const BOOK_DOWN_Y = -5.0;
+        const BOOK_W = 7.0, BOOK_H = 9.8, BOOK_THICK = 0.35;
+
+        const bookGroup = new THREE.Group();
+        bookGroup.position.set(0, BOOK_NORMAL_Y, 0);
+        scene.add(bookGroup);
+
+        const pagesSideMat = new THREE.MeshStandardMaterial({ map: createBookPagesTexture(), roughness: 0.95 });
+        const bottomCoverMat = new THREE.MeshStandardMaterial({ color: '#b09673', roughness: 0.9 });
+        const page1Mat = new THREE.MeshStandardMaterial({ map: createPage1Texture(), roughness: 0.95 });
+        const page2Mat = new THREE.MeshStandardMaterial({ map: createPage2Texture(), roughness: 0.95 });
+
+        const bookBase = new THREE.Mesh(
+            new THREE.BoxGeometry(BOOK_W, BOOK_THICK, BOOK_H),
+            [pagesSideMat, pagesSideMat, page2Mat, bottomCoverMat, pagesSideMat, pagesSideMat]
+        );
+        bookGroup.add(bookBase);
+
+        const pagePivot = new THREE.Group();
+        pagePivot.position.set(-BOOK_W / 2, BOOK_THICK / 2 + 0.005, 0);
+        bookGroup.add(pagePivot);
+
+        const leafGeo = new THREE.BoxGeometry(BOOK_W, 0.02, BOOK_H);
+        leafGeo.translate(BOOK_W / 2, 0, 0);
+        const bookLeaf = new THREE.Mesh(leafGeo, [pagesSideMat, pagesSideMat, page1Mat, page2Mat, pagesSideMat, pagesSideMat]);
+        pagePivot.add(bookLeaf);
+
+        const coverPivot = new THREE.Group();
+        coverPivot.position.set(-BOOK_W / 2, BOOK_THICK / 2 + 0.02, 0);
+        bookGroup.add(coverPivot);
+
+        const coverGeo = new THREE.BoxGeometry(BOOK_W, 0.04, BOOK_H);
+        coverGeo.translate(BOOK_W / 2, 0, 0);
+        const bookCover = new THREE.Mesh(coverGeo, [
+            pagesSideMat, pagesSideMat,
+            new THREE.MeshStandardMaterial({ map: createCoverTexture(), roughness: 0.6 }),
+            page1Mat, pagesSideMat, pagesSideMat
+        ]);
+        coverPivot.add(bookCover);
+
+        const allBuilders = [
+            build3DPrism, build3DCorner, build3DEqualEdge, build3DHypotenuse,
+            build3DVertical, build3DIsosceles, build3DDualPlane
+        ];
+        const active3DModels = allBuilders.map((builder, i) => {
+            const m = builder();
+            m.visible = false;
+            m.userData.id = i;
+            m.userData.page = MODEL_DATA[i].page;
+            scene.add(m);
+            return m;
+        });
+
+        const page1SlotZ = [-3.4, -1.2, 1.0, 3.2];
+        const page2SlotZ = [-3.1, -0.3, 2.5];
+
+        const clickSlots = [];
+        page1SlotZ.forEach((z, i) => {
+            const hit = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.7), new THREE.MeshBasicMaterial({ visible: false }));
+            hit.rotation.x = -Math.PI / 2;
+            hit.position.set(1.7, BOOK_THICK / 2 + 0.03, z);
+            hit.userData.slotIndex = i;
+            hit.userData.page = 1;
+            bookGroup.add(hit);
+            clickSlots.push(hit);
+        });
+        page2SlotZ.forEach((z, i) => {
+            const hit = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.2), new THREE.MeshBasicMaterial({ visible: false }));
+            hit.rotation.x = -Math.PI / 2;
+            hit.position.set(1.7, BOOK_THICK / 2 + 0.01, z);
+            hit.userData.slotIndex = i + 4;
+            hit.userData.page = 2;
+            bookGroup.add(hit);
+            clickSlots.push(hit);
+        });
+
+        /* ========================================================
+           7. 交互控制与旋转定格状态管理
+           ======================================================== */
+        let isBookOpen = false;
+        let currentPageNum = 1;
+        let activeModel = null;
+        let isAnimating = false;
+        const DEFAULT_SCALE = 1.15;
+        let modelScaleFactor = DEFAULT_SCALE;
+
+        // ⭐ 旋转状态标志位（默认为自转状态，点击可随时定格）
+        let isAutoRotating = true;
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const topText = document.getElementById('top-text');
+        const scaleBadge = document.getElementById('scale-badge');
+        const sidePanel = document.getElementById('side-panel');
+        const panelToggleTab = document.getElementById('panel-toggle-tab');
+        const paintToolbar = document.getElementById('paint-toolbar');
+        const btnToggleBox = document.getElementById('btn-toggle-box');
+        const pageNavBar = document.getElementById('page-nav-bar');
+        const btnNextPage = document.getElementById('btn-next-page');
+        const btnPrevPage = document.getElementById('btn-prev-page');
+        const btnModeOrbit = document.getElementById('btn-mode-orbit');
+
+        // 更新“旋转观察/定格观察”按钮文本与提示
+        function updateOrbitButtonState() {
+            if (isAutoRotating) {
+                btnModeOrbit.innerHTML = '🔄 自动旋转 (点击定格)';
+                btnModeOrbit.title = '当前正在自动旋转，点击可停止旋转定格几何体';
+            } else {
+                btnModeOrbit.innerHTML = '⏸ 定格观察 (点击自转)';
+                btnModeOrbit.title = '当前已定格，可手动拖拽视角观察，点击恢复自转';
+            }
+        }
+
+        // ⭐ 点击旋转观察按钮：切换 停止自转 / 恢复自转
+        btnModeOrbit.onclick = () => {
+            if (currentDrawMode === 'orbit') {
+                isAutoRotating = !isAutoRotating;
+            } else {
+                switchDrawMode('orbit');
+                isAutoRotating = false; // 从涂鸦/划线切回时直接定格，方便精确观察
+            }
+            updateOrbitButtonState();
+        };
+
+        function applyModelScale(val) {
+            if (!activeModel) return;
+            modelScaleFactor = Math.max(0.45, Math.min(2.6, val));
+            activeModel.scale.set(modelScaleFactor, modelScaleFactor, modelScaleFactor);
+            scaleBadge.style.display = 'inline-block';
+            scaleBadge.innerText = `模型大小: ${Math.round((modelScaleFactor / DEFAULT_SCALE) * 100)}%`;
+        }
+
+        document.getElementById('btn-zoom-in').onclick = () => applyModelScale(modelScaleFactor + 0.18);
+        document.getElementById('btn-zoom-out').onclick = () => applyModelScale(modelScaleFactor - 0.18);
+        document.getElementById('btn-zoom-reset').onclick = () => applyModelScale(DEFAULT_SCALE);
+
+        panelToggleTab.onclick = () => {
+            sidePanel.classList.toggle('collapsed');
+            const isCollapsed = sidePanel.classList.contains('collapsed');
+            panelToggleTab.innerHTML = isCollapsed ? "◀<br>展<br>开<br>推<br>导" : "▶<br>收<br>起<br>推<br>导";
+        };
+
+        btnToggleBox.onclick = () => {
+            if (activeModel && activeModel.userData.cuboid) {
+                const c = activeModel.userData.cuboid;
+                c.visible = !c.visible;
+                btnToggleBox.innerText = c.visible ? "📦 隐藏长方体补形" : "📦 显示长方体补形";
+            }
+        };
+
+        function openBook() {
+            isAnimating = true;
+            topText.innerHTML = "✨ 正在翻开立体教材...";
+            gsap.to(coverPivot.rotation, {
+                z: Math.PI * 0.98,
+                duration: 1.35,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    isBookOpen = true;
+                    isAnimating = false;
+                    pageNavBar.style.display = 'flex';
+                    topText.innerHTML = "🎯 点击书页右侧的几何卡片，模型将【像草芽破土拔节】生长而出！";
+                    gsap.to(camera.position, { x: 0, y: 10, z: 9.5, duration: 1.0 });
+                }
+            });
+        }
+
+        btnNextPage.onclick = () => {
+            if (isAnimating || currentPageNum === 2) return;
+            isAnimating = true;
+            topText.innerHTML = "📄 正在翻至第 2 页 (垂线/等腰/面面垂直双面定位)...";
+            gsap.to(pagePivot.rotation, {
+                z: Math.PI * 0.97,
+                duration: 1.1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    currentPageNum = 2;
+                    isAnimating = false;
+                    btnNextPage.style.display = 'none';
+                    btnPrevPage.style.display = 'inline-block';
+                    topText.innerHTML = "📌 第 2 页：点击【双面定位模型】观察面面垂直三棱锥！";
+                }
+            });
+        };
+
+        btnPrevPage.onclick = () => {
+            if (isAnimating || currentPageNum === 1) return;
+            isAnimating = true;
+            topText.innerHTML = "📄 正在翻回第 1 页...";
+            gsap.to(pagePivot.rotation, {
+                z: 0,
+                duration: 1.1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    currentPageNum = 1;
+                    isAnimating = false;
+                    btnPrevPage.style.display = 'none';
+                    btnNextPage.style.display = 'inline-block';
+                    topText.innerHTML = "📌 第 1 页：点击任意卡片拔出 3D 几何实体！";
+                }
+            });
+        };
+
+        function sproutModel(idx) {
+            isAnimating = true;
+            const target = active3DModels[idx];
+            activeModel = target;
+            modelScaleFactor = DEFAULT_SCALE;
+            const data = MODEL_DATA[idx];
+
+            pageNavBar.style.display = 'none';
+
+            const startZ = idx < 4 ? page1SlotZ[idx] : page2SlotZ[idx - 4];
+            target.position.set(1.7, BOOK_NORMAL_Y + 0.15, startZ);
+            target.rotation.set(0, 0, 0);
+            target.visible = true;
+
+            target.scale.set(0.04, 0.01, 0.04);
+
+            const tl = gsap.timeline({ onComplete: () => { isAnimating = false; } });
+
+            tl.to(target.scale, { x: 0.22, y: 1.6, z: 0.22, duration: 0.38, ease: "power2.out" });
+            tl.to(target.position, { y: BOOK_NORMAL_Y + 1.25, duration: 0.38, ease: "power2.out" }, "<");
+
+            tl.to(bookGroup.position, { y: BOOK_DOWN_Y, duration: 0.85, ease: "power2.inOut" }, "-=0.15");
+
+            tl.to(target.scale, {
+                x: modelScaleFactor, y: modelScaleFactor, z: modelScaleFactor,
+                duration: 0.95, ease: "elastic.out(1.15, 0.45)"
+            }, "-=0.55");
+
+            tl.to(target.position, { x: -1.0, y: 0.4, z: 1.5, duration: 0.85, ease: "power2.out" }, "<");
+
+            document.getElementById('m-title').innerText = data.name;
+            const dBox = document.getElementById('derivation-content');
+            dBox.innerHTML = data.derivation;
+            if (window.renderMathInElement) {
+                renderMathInElement(dBox, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+
+            sidePanel.classList.remove('collapsed');
+            sidePanel.classList.add('open');
+            panelToggleTab.style.display = 'block';
+            panelToggleTab.innerHTML = "▶<br>收<br>起<br>推<br>导";
+
+            paintToolbar.style.display = 'flex';
+            topText.innerHTML = `💡 当前探究：${data.name} (可点击“自动旋转”定格静止，或涂鸦作图)`;
+            applyModelScale(DEFAULT_SCALE);
+
+            // 拔起时重置为自动旋转状态
+            isAutoRotating = true;
+            updateOrbitButtonState();
+
+            if ((idx === 1 || idx === 2) && target.userData.cuboid) {
+                btnToggleBox.style.display = 'inline-block';
+                btnToggleBox.innerText = target.userData.cuboid.visible ? "📦 隐藏长方体补形" : "📦 显示长方体补形";
+            } else {
+                btnToggleBox.style.display = 'none';
+            }
+        }
+
+        document.getElementById('btn-return').addEventListener('click', () => {
+            if (!activeModel || isAnimating) return;
+            isAnimating = true;
+
+            sidePanel.classList.remove('open', 'collapsed');
+            panelToggleTab.style.display = 'none';
+            paintToolbar.style.display = 'none';
+            scaleBadge.style.display = 'none';
+            btnToggleBox.style.display = 'none';
+            clearScreenDrawing();
+
+            gsap.to(bookGroup.position, { y: BOOK_NORMAL_Y, duration: 0.85, ease: "power2.inOut" });
+
+            const idx = activeModel.userData.id;
+            const startZ = idx < 4 ? page1SlotZ[idx] : page2SlotZ[idx - 4];
+
+            gsap.to(activeModel.position, { x: 1.7, y: BOOK_NORMAL_Y + 0.15, z: startZ, duration: 0.75, ease: "power3.in" });
+            gsap.to(activeModel.scale, {
+                x: 0.04, y: 0.01, z: 0.04,
+                duration: 0.75, ease: "power2.in",
+                onComplete: () => {
+                    activeModel.visible = false;
+                    activeModel = null;
+                    isAnimating = false;
+                    pageNavBar.style.display = 'flex';
+                    switchDrawMode('orbit');
+                    topText.innerHTML = "🎯 点击书页右侧的几何卡片，模型将【像草芽破土拔节】生长而出！";
+                }
+            });
+        });
+
+        window.addEventListener('pointerdown', (e) => {
+            if (!controlsEnabled || isAnimating || e.target.closest('#side-panel') || e.target.closest('#paint-toolbar') || e.target.closest('#page-nav-bar')) return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            if (!isBookOpen) {
+                const hits = raycaster.intersectObject(bookCover, true);
+                if (hits.length > 0) openBook();
+                return;
+            }
+
+            if (isBookOpen && !activeModel) {
+                const validSlots = clickSlots.filter(s => s.userData.page === currentPageNum);
+                const hits = raycaster.intersectObjects(validSlots);
+                if (hits.length > 0) {
+                    sproutModel(hits[0].object.userData.slotIndex);
+                }
+            }
+        });
+
+        /* ========================================================
+           8. 全屏几何体批注涂鸦画板系统
+           ======================================================== */
+        const drawCanvas = document.getElementById('draw-canvas');
+        const drawCtx = drawCanvas.getContext('2d');
+        let currentDrawMode = 'orbit';
+        let currentColor = '#dc2626';
+        let isDrawing = false, startX = 0, startY = 0, canvasSnapshot = null;
+
+        function resizeDrawCanvas() {
+            drawCanvas.width = window.innerWidth;
+            drawCanvas.height = window.innerHeight;
+        }
+        resizeDrawCanvas();
+        window.addEventListener('resize', resizeDrawCanvas);
+
+        function clearScreenDrawing() {
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        }
+        document.getElementById('btn-clear-draw').onclick = clearScreenDrawing;
+
+        function switchDrawMode(mode) {
+            currentDrawMode = mode;
+            ['btn-mode-orbit', 'btn-mode-pen', 'btn-mode-line'].forEach(id => {
+                document.getElementById(id).classList.remove('active');
+            });
+
+            if (mode === 'orbit') {
+                controlsEnabled = true;
+                drawCanvas.classList.remove('drawing-active');
+                btnModeOrbit.classList.add('active');
+                updateOrbitButtonState();
+            } else if (mode === 'pen') {
+                controlsEnabled = false;
+                drawCanvas.classList.add('drawing-active');
+                document.getElementById('btn-mode-pen').classList.add('active');
+            } else if (mode === 'line') {
+                controlsEnabled = false;
+                drawCanvas.classList.add('drawing-active');
+                document.getElementById('btn-mode-line').classList.add('active');
+            }
+        }
+
+        document.getElementById('btn-mode-pen').onclick = () => switchDrawMode('pen');
+        document.getElementById('btn-mode-line').onclick = () => switchDrawMode('line');
+
+        document.querySelectorAll('.palette .color-dot').forEach(dot => {
+            dot.onclick = () => {
+                document.querySelectorAll('.palette .color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                currentColor = dot.dataset.color;
+            };
+        });
+
+        drawCanvas.addEventListener('pointerdown', (e) => {
+            if (currentDrawMode === 'orbit') return;
+            isDrawing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            drawCtx.strokeStyle = currentColor;
+            drawCtx.lineWidth = 3.5;
+            drawCtx.lineCap = 'round';
+            drawCtx.lineJoin = 'round';
+
+            if (currentDrawMode === 'line') {
+                canvasSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+            } else {
+                drawCtx.beginPath();
+                drawCtx.moveTo(startX, startY);
+            }
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDrawing) return;
+            const curX = e.clientX;
+            const curY = e.clientY;
+
+            if (currentDrawMode === 'pen') {
+                drawCtx.lineTo(curX, curY);
+                drawCtx.stroke();
+            } else if (currentDrawMode === 'line') {
+                drawCtx.putImageData(canvasSnapshot, 0, 0);
+                drawCtx.beginPath();
+                drawCtx.moveTo(startX, startY);
+                drawCtx.lineTo(curX, curY);
+                drawCtx.stroke();
+            }
+        });
+
+        window.addEventListener('pointerup', () => { isDrawing = false; });
+
+        /* ========================================================
+           9. 渲染循环 (受 isAutoRotating 精确控制)
+           ======================================================== */
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // ⭐ 仅当在观察模式且 isAutoRotating 为 true 时自动旋转
+            if (activeModel && !isAnimating && currentDrawMode === 'orbit' && isAutoRotating) {
+                activeModel.rotation.y += delta * 0.35;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+</html>
