@@ -42,7 +42,7 @@
             touch-action: none;
         }
 
-        /* ⭐ 左上角：合上课本按钮 */
+        /* 左上角：合上课本按钮 */
         #top-left-bar {
             position: absolute;
             top: 18px;
@@ -150,7 +150,7 @@
         #paint-toolbar-wrapper {
             position: absolute;
             top: 0;
-            left: 50%;
+            left: 45%;
             transform: translateX(-50%);
             z-index: 25;
             display: none;
@@ -165,10 +165,10 @@
             backdrop-filter: blur(12px);
             border: 1.5px solid #cbbaa5;
             border-radius: 30px;
-            padding: 6px 16px;
+            padding: 6px 14px;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             box-shadow: 0 6px 22px rgba(60, 45, 30, 0.18);
             transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
             max-width: 95vw;
@@ -207,7 +207,7 @@
         .tool-btn {
             background: #efe4d3;
             border: 1px solid #cbb89f;
-            padding: 5px 11px;
+            padding: 5px 10px;
             border-radius: 20px;
             font-family: inherit;
             font-size: 13px;
@@ -233,14 +233,14 @@
         .zoom-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             padding-left: 6px;
             border-left: 1px solid #d5c4af;
         }
         .zoom-btn {
             background: #e8dccb;
             color: #633806;
-            padding: 5px 9px;
+            padding: 5px 8px;
         }
         .zoom-btn:hover {
             background: #ddceba;
@@ -249,13 +249,13 @@
         .palette {
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             padding-left: 6px;
             border-left: 1px solid #d5c4af;
         }
         .color-dot {
-            width: 20px;
-            height: 20px;
+            width: 19px;
+            height: 19px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid #fff;
@@ -263,26 +263,27 @@
             transition: transform 0.2s;
         }
         .color-dot.active {
-            transform: scale(1.3);
+            transform: scale(1.25);
             border-color: #2b1f13;
         }
 
-        /* 右侧推导面板 */
+        /* ⭐ 右侧推导面板：优化收窄尺寸，不遮挡左侧三维模型 */
         #side-panel {
             position: absolute;
             top: 0;
             right: 0;
-            width: 460px;
+            width: 340px;
+            max-width: 32vw;
             height: 100%;
             background: rgba(245, 239, 229, 0.98);
             backdrop-filter: blur(16px);
-            box-shadow: -8px 0 35px rgba(60, 45, 30, 0.18);
+            box-shadow: -8px 0 30px rgba(60, 45, 30, 0.16);
             z-index: 30;
             transform: translateX(100%);
             transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
             display: flex;
             flex-direction: column;
-            padding: 24px;
+            padding: 18px 15px;
             border-left: 2px solid #cebfab;
             touch-action: pan-y;
         }
@@ -297,16 +298,16 @@
 
         #panel-toggle-tab {
             position: absolute;
-            left: -42px;
+            left: -38px;
             top: 50%;
             transform: translateY(-50%);
-            width: 42px;
-            padding: 16px 6px;
+            width: 38px;
+            padding: 14px 5px;
             background: #e6dac8;
             border: 2px solid #cebfab;
             border-right: none;
             border-radius: 12px 0 0 12px;
-            font-size: 13.5px;
+            font-size: 13px;
             font-weight: bold;
             color: #3b2b1b;
             cursor: pointer;
@@ -326,20 +327,25 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #cebfab;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            gap: 6px;
         }
 
         .panel-title {
-            font-size: 18.5px;
+            font-size: 16px;
             font-weight: bold;
             color: #2a1d12;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
         .btn-box-toggle {
@@ -347,12 +353,12 @@
             background: #0284c7;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
+            padding: 5px 9px;
+            border-radius: 6px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
         }
         .btn-box-toggle:hover {
@@ -363,21 +369,22 @@
             background: #b43d0e;
             color: white;
             border: none;
-            padding: 6px 14px;
-            border-radius: 8px;
+            padding: 5px 11px;
+            border-radius: 6px;
             cursor: pointer;
             font-family: inherit;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
+            white-space: nowrap;
         }
 
         .derivation-box {
             background: #e9dec9;
             border: 1px solid #cdbfae;
             border-radius: 10px;
-            padding: 18px;
-            font-size: 15.5px;
-            line-height: 1.85;
+            padding: 14px 12px;
+            font-size: 14px;
+            line-height: 1.75;
             color: #312215;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -386,22 +393,22 @@
         }
         .derivation-box h4 {
             color: #1a1109;
-            margin-bottom: 10px;
-            font-size: 16.5px;
+            margin-bottom: 8px;
+            font-size: 15px;
             border-left: 4px solid #b43d0e;
             padding-left: 8px;
         }
         .formula-highlight {
             background: #ded0bc;
             border: 1px dashed #ad9375;
-            padding: 8px 12px;
+            padding: 6px 8px;
             border-radius: 6px;
-            margin: 10px 0;
+            margin: 8px 0;
             text-align: center;
         }
 
         .katex {
-            font-size: 1.15em !important;
+            font-size: 1.1em !important;
             color: #8b1818 !important;
         }
     </style>
@@ -411,7 +418,7 @@
 </head>
 <body>
 
-    <!-- ⭐ 左上角：合上课本按钮 -->
+    <!-- 左上角：合上课本按钮 -->
     <div id="top-left-bar">
         <button id="btn-close-book">📕 合上课本</button>
     </div>
@@ -463,7 +470,7 @@
         <div class="panel-header">
             <span class="panel-title" id="m-title">模型推导探究</span>
             <div class="header-actions">
-                <button class="btn-box-toggle" id="btn-toggle-box">📦 显示长方体补形</button>
+                <button class="btn-box-toggle" id="btn-toggle-box">📦 补形</button>
                 <button class="btn-back" id="btn-return">放回书本 ↩</button>
             </div>
         </div>
@@ -654,11 +661,11 @@
                 derivation: `
                     <h4>【原理】上下底面外心垂直连线法</h4>
                     1. 设直三棱柱高为 $h$，底面外接圆半径为 $r$。<br>
-                    2. 设上下底面的外心分别为 $O_1, O_2$，球心 $O$ 为线段 $O_1O_2$ 的中点。<br>
-                    3. 在直角三角形 $\\triangle OO_1A$ 中（$A$ 为顶面顶点）：<br>
+                    2. 上下底面外心分别为 $O_1, O_2$，球心 $O$ 为 $O_1O_2$ 中点。<br>
+                    3. 在 Rt$\\triangle OO_1A$ 中（$A$ 为顶面顶点）：<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;• 竖直分量：$OO_1 = \\frac{h}{2}$<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;• 水平分量：$O_1A = r$<br>
-                    4. 根据勾股定理直接求得外接球半径：
+                    4. 根据勾股定理直接求得：
                     <div class="formula-highlight">
                         $$R = \\sqrt{r^2 + \\left(\\frac{h}{2}\\right)^2}$$
                     </div>
@@ -666,15 +673,14 @@
             },
             {
                 id: 1, page: 1,
-                name: "模型二：墙角模型 (三线两两垂直)",
+                name: "模型二：墙角模型 (三线垂直)",
                 desc: "三条棱两两垂直，长分别为 a, b, c",
                 formula: "(2R)^2 = a^2 + b^2 + c^2 \\implies R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2}",
                 derivation: `
                     <h4>【原理】长方体补形法</h4>
-                    1. 点击右上角<b>【显示长方体补形】</b>按钮可直观观察补形全貌。<br>
-                    2. 三棱锥有三条两两垂直的棱 $OA, OB, OC$，可补全为长宽高为 $a, b, c$ 的长方体。<br>
-                    3. 三棱锥的 4 个顶点共用长方体的外接球。<br>
-                    4. 长方体体对角线即为外接球直径 $2R$：
+                    1. 点击右上角<b>【补形】</b>按钮可观察空间全貌。<br>
+                    2. 三棱锥有三条两两垂直的棱，补全为长宽高为 $a, b, c$ 的长方体。<br>
+                    3. 长方体体对角线即为外接球直径 $2R$：
                     <div class="formula-highlight">
                         $$R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2}$$
                     </div>
@@ -686,14 +692,13 @@
                 desc: "三组对棱分别相等，长分别为 x, y, z",
                 formula: "R = \\sqrt{\\frac{x^2 + y^2 + z^2}{8}}",
                 derivation: `
-                    <h4>【原理】长方体表面面对角线嵌入法</h4>
-                    1. 点击右上角<b>【显示/隐藏长方体】</b>可以观察空间嵌构。<br>
-                    2. 四面体三组对棱分别对应长方体 6 个表面的面对角线：<br>
+                    <h4>【原理】表面面对角线嵌入法</h4>
+                    1. 四面体三组对棱分别对应长方体表面的面对角线：<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;• $a^2 + b^2 = x^2,\\quad b^2 + c^2 = y^2,\\quad c^2 + a^2 = z^2$<br>
-                    3. 三式相加：$2(a^2 + b^2 + c^2) = x^2 + y^2 + z^2$。<br>
-                    4. 代入长方体外接球公式得：
+                    2. 三式相加：$2(a^2 + b^2 + c^2) = x^2 + y^2 + z^2$。<br>
+                    3. 代入长方体外接球公式得：
                     <div class="formula-highlight">
-                        $$R = \\frac{\\sqrt{a^2 + b^2 + c^2}}{2} = \\sqrt{\\frac{x^2 + y^2 + z^2}{8}}$$
+                        $$R = \\sqrt{\\frac{x^2 + y^2 + z^2}{8}}$$
                     </div>
                 `
             },
@@ -706,9 +711,9 @@
                     <h4>【原理】直角三角形斜边中点性质</h4>
                     1. $\\triangle BED$ 与 $\\triangle BCD$ 均为直角三角形，共用斜边 $BD$。<br>
                     2. 取公共斜边 $BD$ 的中点记为 $O$。<br>
-                    3. 由“直角三角形斜边中线等于斜边一半”：<br>
+                    3. 由斜边中线性质：<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;• $OE = OB = OD = OC = \\frac{1}{2}BD$<br>
-                    4. 点 $O$ 到 4 个顶点的距离全部相等，球心即为斜边中点：
+                    4. 点 $O$ 即为外接球球心：
                     <div class="formula-highlight">
                         $$R = \\frac{1}{2}BD$$
                     </div>
@@ -716,18 +721,16 @@
             },
             {
                 id: 4, page: 2,
-                name: "模型五：垂线模型 (一侧棱垂直于底面)",
+                name: "模型五：垂线模型 (一侧棱垂直)",
                 desc: "DG ⊥ 平面 ABG，底面外接圆半径为 r",
                 formula: "R = \\sqrt{r^2 + OO_1^2} = \\sqrt{r^2 + \\left(\\frac{1}{2}DG\\right)^2}",
                 derivation: `
                     <h4>【原理】小圆面与过直径截面法</h4>
-                    1. 将 $\\triangle ABG$ 画在球的小圆面上，作直径 $GF$。<br>
-                    2. 连接 $DF$，则线段 $DF$ 必经过球心 $O$。<br>
-                    3. 作 $OO_1 \\perp \\text{平面 } ABG$，计算小圆半径 $r = O_1F$。<br>
-                    4. 竖直方向平分高：$OO_1 = \\frac{1}{2}DG$。<br>
-                    5. 在 Rt$\\triangle OO_1F$ 中应用勾股定理：
+                    1. 设底面小圆外接圆半径为 $r$。<br>
+                    2. 竖直方向平分高：$OO_1 = \\frac{1}{2}DG$。<br>
+                    3. 在 Rt$\\triangle OO_1F$ 中应用勾股定理：
                     <div class="formula-highlight">
-                        $$R = \\sqrt{r^2 + OO_1^2} = \\sqrt{r^2 + \\left(\\frac{1}{2}DG\\right)^2}$$
+                        $$R = \\sqrt{r^2 + \\left(\\frac{1}{2}DG\\right)^2}$$
                     </div>
                 `
             },
@@ -738,10 +741,10 @@
                 formula: "R = \\frac{a^2}{2h} = \\frac{r^2 + h^2}{2h}",
                 derivation: `
                     <h4>【原理】旋转对称轴心勾股方程法</h4>
-                    1. 设 $O_1$ 为底面 $\\triangle ABC$ 的外心，连结 $JO_1$，则 $JO_1 \\perp \\text{平面 } ABC$。<br>
-                    2. 计算底面小圆半径 $r$ 及棱锥的高：$JO_1 = h = \\sqrt{a^2 - r^2}$。<br>
-                    3. 在 Rt$\\triangle OO_1A$ 中利用勾股定理：$R^2 = r^2 + (h - R)^2$。<br>
-                    4. 展开消去 $R^2$ 后解得：
+                    1. 计算底面小圆半径 $r$ 及棱锥的高 $h = \\sqrt{a^2 - r^2}$。<br>
+                    2. 在 Rt$\\triangle OO_1A$ 中利用勾股定理：<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• $R^2 = r^2 + (h - R)^2$<br>
+                    3. 解得：
                     <div class="formula-highlight">
                         $$R = \\frac{a^2}{2h} = \\frac{r^2 + h^2}{2h}$$
                     </div>
@@ -749,17 +752,14 @@
             },
             {
                 id: 6, page: 2,
-                name: "模型七：双面定位模型 (面面垂直三棱锥)",
-                desc: "面 PAB ⊥ 面 ABC，交线为 AB，两面外心垂线交于球心",
+                name: "模型七：双面定位模型 (面面垂直)",
+                desc: "面 PAB ⊥ 面 ABC，两面外心垂线交于球心",
                 formula: "R^2 = r_1^2 + r_2^2 - \\left(\\frac{AB}{2}\\right)^2",
                 derivation: `
                     <h4>【原理】空间两面相交定位球心法</h4>
-                    1. 3D模型中包含<b>两个严格相互垂直的面</b>：垂直立面 $\\triangle PAB$ 与 水平底面 $\\triangle ABC$（交线为 $AB$）。<br>
-                    2. 面 $PAB$ 的外心为 $O_1$；面 $ABC$ 的外心为 $O_2$。<br>
-                    3. 过 $O_1$ 作面 $PAB$ 垂线，过 $O_2$ 作面 $ABC$ 垂线，两线相交于点 $O$，即为<b>外接球球心</b>！<br>
-                    4. 取公共弦 $AB$ 中点 $M$，四边形 $O-O_1-M-O_2$ 为<b>标准矩形</b>：<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;• 在 Rt$\\triangle OO_1P$ 中：$R^2 = r_1^2 + OO_1^2 = r_1^2 + [r_2^2 - (AB/2)^2]$<br>
-                    5. 代入即得经典公式：
+                    1. 面 $PAB$ 外心 $O_1$，面 $ABC$ 外心 $O_2$。<br>
+                    2. 分别过外心作垂线，两线交点 $O$ 即为球心。<br>
+                    3. 取交线 $AB$ 中点 $M$，四边形 $O-O_1-M-O_2$ 为矩形：
                     <div class="formula-highlight">
                         $$R^2 = r_1^2 + r_2^2 - \\left(\\frac{AB}{2}\\right)^2$$
                     </div>
@@ -1522,7 +1522,7 @@
         });
 
         /* ========================================================
-           7. 交互控制与状态管理 (支持左上角合上课本)
+           7. 交互控制与状态管理 (支持立体图向左偏移避免遮挡)
            ======================================================== */
         let isBookOpen = false;
         let currentPageNum = 1;
@@ -1547,7 +1547,6 @@
         const btnModeOrbit = document.getElementById('btn-mode-orbit');
         const btnCloseBook = document.getElementById('btn-close-book');
 
-        // ⭐ 左上角合上课本核心逻辑
         btnCloseBook.addEventListener('click', (e) => {
             e.stopPropagation();
             closeBook();
@@ -1572,7 +1571,6 @@
                 }
             });
 
-            // 如果当前在第二页，把内页和封面顺畅合上
             if (pagePivot.rotation.z > 0.1) {
                 tl.to(pagePivot.rotation, { z: 0, duration: 0.8, ease: "power2.inOut" }, 0);
             }
@@ -1629,7 +1627,7 @@
             if (activeModel && activeModel.userData.cuboid) {
                 const c = activeModel.userData.cuboid;
                 c.visible = !c.visible;
-                btnToggleBox.innerText = c.visible ? "📦 隐藏长方体补形" : "📦 显示长方体补形";
+                btnToggleBox.innerText = c.visible ? "📦 隐藏补形" : "📦 补形";
             }
         };
 
@@ -1649,7 +1647,7 @@
                     isAnimating = false;
                     coverHitBox.visible = false;
                     pageNavBar.style.display = 'flex';
-                    btnCloseBook.style.display = 'inline-block'; // ⭐ 翻开后在左上角显示“合上课本”
+                    btnCloseBook.style.display = 'inline-block';
                     topText.innerHTML = "🎯 单指旋转看书，双指平移画面；点击卡片长出 3D 几何实体！";
                     gsap.to(camera.position, { x: 0, y: 10, z: 9.5, duration: 1.0 });
                 }
@@ -1696,6 +1694,7 @@
             });
         };
 
+        /* ⭐ 核心调整：立体模型拔出时，坐标整体往左侧移动 (x: -1.9)，相机焦点同步左移居中 */
         function sproutModel(idx) {
             isAnimating = true;
             const target = active3DModels[idx];
@@ -1704,7 +1703,7 @@
             const data = MODEL_DATA[idx];
 
             pageNavBar.style.display = 'none';
-            btnCloseBook.style.display = 'none'; // 生长模型时隐藏合书按钮
+            btnCloseBook.style.display = 'none';
 
             const startZ = idx < 4 ? page1SlotZ[idx] : page2SlotZ[idx - 4];
             target.position.set(1.7, BOOK_NORMAL_Y + 0.15, startZ);
@@ -1720,7 +1719,18 @@
                 x: modelScaleFactor, y: modelScaleFactor, z: modelScaleFactor,
                 duration: 0.95, ease: "elastic.out(1.15, 0.45)"
             }, "-=0.55");
-            tl.to(target.position, { x: -1.0, y: 0.4, z: 1.5, duration: 0.85, ease: "power2.out" }, "<");
+
+            // ⭐ 关键点：模型向左平移至 x = -1.9，远离右侧面板
+            tl.to(target.position, { x: -1.9, y: 0.35, z: 1.2, duration: 0.85, ease: "power2.out" }, "<");
+
+            // ⭐ 视角中心同步平滑过渡到立体模型处，旋转时以模型为中心，绝不挡住
+            gsap.to(controls.target, {
+                x: -1.8,
+                y: 0.35,
+                z: 0.8,
+                duration: 0.85,
+                ease: "power2.out"
+            });
 
             document.getElementById('m-title').innerText = data.name;
             const dBox = document.getElementById('derivation-content');
@@ -1752,7 +1762,7 @@
 
             if ((idx === 1 || idx === 2) && target.userData.cuboid) {
                 btnToggleBox.style.display = 'inline-block';
-                btnToggleBox.innerText = target.userData.cuboid.visible ? "📦 隐藏长方体补形" : "📦 显示长方体补形";
+                btnToggleBox.innerText = target.userData.cuboid.visible ? "📦 隐藏补形" : "📦 补形";
             } else {
                 btnToggleBox.style.display = 'none';
             }
@@ -1769,7 +1779,7 @@
             btnToggleBox.style.display = 'none';
             clearScreenDrawing();
 
-            controls.resetPan();
+            controls.resetPan(); // ⭐ 视线平滑回正到屏幕正中
 
             gsap.to(bookGroup.position, { y: BOOK_NORMAL_Y, duration: 0.85, ease: "power2.inOut" });
 
@@ -1785,7 +1795,7 @@
                     activeModel = null;
                     isAnimating = false;
                     pageNavBar.style.display = 'flex';
-                    btnCloseBook.style.display = 'inline-block'; // 回书本后重新显现左上角合书按钮
+                    btnCloseBook.style.display = 'inline-block';
                     switchDrawMode('orbit');
                     topText.innerHTML = "🎯 单指旋转看书，双指平移画面；点击卡片长出 3D 几何实体！";
                 }
@@ -2027,7 +2037,6 @@
             drawCtx.restore();
         }
 
-        // Apple Pencil 提笔即画
         window.addEventListener('pointerdown', (e) => {
             if (e.target.closest('#side-panel') || e.target.closest('#paint-toolbar-wrapper') || e.target.closest('#page-nav-bar') || e.target.closest('#top-left-bar')) return;
             if (e.pointerType === 'pen' && activeModel && currentDrawMode === 'orbit') {
