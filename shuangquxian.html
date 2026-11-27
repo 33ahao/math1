@@ -112,7 +112,7 @@
             z-index: 38;
         }
 
-        /* 3D 舞台包装器：淡雅遮罩，透出背景课本 */
+        /* 3D 舞台包装器 */
         #modal-wrapper {
             position: fixed;
             top: 0;
@@ -130,7 +130,7 @@
             touch-action: none;
         }
 
-        /* 浮动卡片容器：浅色半透宣纸质感 */
+        /* 浮动卡片容器 */
         #plane2d-container {
             width: 1240px;
             max-width: 96vw;
@@ -151,7 +151,7 @@
             transition: width 0.3s ease, height 0.3s ease, border-radius 0.3s ease;
         }
 
-        /* 全屏状态：卡片铺满，推导过程缩至右侧 */
+        /* 全屏状态 */
         #plane2d-container.is-fullscreen {
             width: 100vw !important;
             height: 100vh !important;
@@ -222,7 +222,6 @@
             position: relative;
         }
 
-        /* 图像区域：背景透明化 */
         .plane2d-canvas-box {
             flex: 1;
             background: rgba(255, 255, 255, 0.38);
@@ -234,7 +233,6 @@
             flex-direction: row;
         }
 
-        /* 左侧垂直工具栏 */
         .canvas-left-toolbar {
             width: 114px;
             min-width: 114px;
@@ -291,7 +289,6 @@
             background: transparent;
         }
 
-        /* 右侧理论推导栏：全屏时自动精简收缩至旁边 */
         .plane2d-info-box {
             width: 320px;
             min-width: 270px;
@@ -310,7 +307,6 @@
             transition: width 0.3s ease, min-width 0.3s ease, padding 0.3s ease, font-size 0.3s ease;
         }
 
-        /* 全屏状态下推导面板缩至旁边 */
         #plane2d-container.is-fullscreen .plane2d-info-box {
             width: 280px !important;
             min-width: 250px !important;
@@ -436,18 +432,15 @@
 </head>
 <body>
 
-    <!-- 左上角操作栏 -->
     <div id="top-left-bar">
-        <button id="btn-close-book" class="btn-top-action">📕 合上宝典</button>
+        <button id="btn-close-book" class="btn-top-action">📕 合上🦌哥宝典</button>
         <button id="btn-flip-page" class="btn-top-action">📑 翻至：神秘例题研讨页 ➔</button>
     </div>
 
-    <!-- 底部状态说明 -->
     <div id="top-bar">
-        <span id="top-text">📖 🦌哥专属课本！</span>
+        <span id="top-text">📖 🦌哥宝典！</span>
     </div>
 
-    <!-- 3D 浮生卡片式弹窗 -->
     <div id="modal-wrapper">
         <div id="plane2d-container">
             <div class="plane2d-header" id="plane2d-header">
@@ -501,7 +494,7 @@
 
     <script>
         /* ========================================================
-           1. 3D 场景视角控制器
+           1. 3D 视角控制器
            ======================================================== */
         let controlsEnabled = true;
 
@@ -615,7 +608,7 @@
         }
 
         /* ========================================================
-           2. 课本材质：封面、双曲线、椭圆抛物线、例题研讨页
+           2. 课本材质生成
            ======================================================== */
         function createBookPagesTexture() {
             const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 512;
@@ -774,7 +767,6 @@
             return tex;
         }
 
-        /* 浅色纸质底色例题研讨页 */
         function createExercisePageTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 1440; canvas.height = 2048;
@@ -957,7 +949,7 @@
         }
 
         /* ========================================================
-           3. Three.js 课本场景搭建
+           3. Three.js 课本搭建
            ======================================================== */
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -1037,7 +1029,7 @@
         pageTurnPivot.add(pageLeafMesh);
 
         /* ========================================================
-           4. 翻书、翻页与合书控制
+           4. 翻书控制
            ======================================================== */
         let isBookOpen = false;
         let isAnimating = false;
@@ -1135,7 +1127,7 @@
         };
 
         /* ========================================================
-           5. 3D 浮生卡片升起 & 课本同步下沉动效
+           5. 3D 浮生卡片升起 & 下沉
            ======================================================== */
         const modalWrapper = document.getElementById('modal-wrapper');
         const plane2DContainer = document.getElementById('plane2d-container');
@@ -1184,7 +1176,6 @@
 
         const MATH_SCALE = 38;
 
-        // ⭐ 彻底重置清空一切涂鸦与多余轨迹
         function clearGraffiti() {
             tracePoints = [];
             graphDrawCtx.save();
@@ -1237,17 +1228,16 @@
         function riseUpPlaneCenter(key, tapScreenX, tapScreenY) {
             if (isPlaneTransitioning) return;
             isPlaneTransitioning = true;
-            plane2DContainer.style.pointerEvents = 'none'; // ⭐ 动效期间彻底禁用点击穿透
+            plane2DContainer.style.pointerEvents = 'none';
             currentActivePlaneKey = key;
             isPlaneActive = true;
             controlsEnabled = false;
 
-            // ⭐ 强制重置工具为拖拽，杜绝铅笔/直线残留
             setGraphTool('drag', btnGDrag);
             isTraceEnabled = false;
             btnToggleTrace.innerText = "🪄 轨迹: 关";
             btnToggleTrace.classList.remove('active');
-            clearGraffiti(); // ⭐ 彻底清除
+            clearGraffiti();
 
             isAutoPlaying = false;
             updatePlayBtnUI();
@@ -1274,25 +1264,13 @@
 
             triggerBookSpawnEffect(startX, startY);
 
-            // 课本平滑优雅下沉
-            gsap.to(bookGroup.position, {
-                y: BOOK_NORMAL_Y - 2.4,
-                duration: 0.8,
-                ease: "power2.out"
-            });
-            gsap.to(bookGroup.scale, {
-                x: 0.92, y: 0.92, z: 0.92,
-                duration: 0.8,
-                ease: "power2.out"
-            });
+            gsap.to(bookGroup.position, { y: BOOK_NORMAL_Y - 2.4, duration: 0.8, ease: "power2.out" });
+            gsap.to(bookGroup.scale, { x: 0.92, y: 0.92, z: 0.92, duration: 0.8, ease: "power2.out" });
 
             const deltaX = startX - centerX;
             const deltaY = startY - centerY;
 
-            gsap.fromTo(modalWrapper, 
-                { opacity: 0 }, 
-                { opacity: 1, duration: 0.35, ease: "power2.out" }
-            );
+            gsap.fromTo(modalWrapper, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" });
 
             gsap.set(plane2DContainer, {
                 x: deltaX,
@@ -1307,9 +1285,9 @@
             const tl = gsap.timeline({
                 onComplete: () => {
                     isPlaneTransitioning = false;
-                    plane2DContainer.style.pointerEvents = 'auto'; // ⭐ 动效完成后解禁
+                    plane2DContainer.style.pointerEvents = 'auto';
                     resizeCanvases();
-                    clearGraffiti(); // ⭐ 再次深度清理，杜绝任何形变线段
+                    clearGraffiti();
                     update2DCanvas();
                 }
             });
@@ -1337,7 +1315,6 @@
             });
         }
 
-        // 放回课本
         function closePlane() {
             if (isPlaneTransitioning || !isPlaneActive) return;
             if (isGraphFullscreen) toggleGraphFullscreen();
@@ -1346,22 +1323,14 @@
             plane2DContainer.style.pointerEvents = 'none';
             isAutoPlaying = false;
 
-            clearGraffiti(); // ⭐ 重置涂鸦
+            clearGraffiti();
             isTraceEnabled = false;
             btnToggleTrace.innerText = "🪄 轨迹: 关";
             btnToggleTrace.classList.remove('active');
             setGraphTool('drag', btnGDrag);
 
-            gsap.to(bookGroup.position, {
-                y: BOOK_NORMAL_Y,
-                duration: 0.7,
-                ease: "power2.inOut"
-            });
-            gsap.to(bookGroup.scale, {
-                x: 1.0, y: 1.0, z: 1.0,
-                duration: 0.7,
-                ease: "power2.inOut"
-            });
+            gsap.to(bookGroup.position, { y: BOOK_NORMAL_Y, duration: 0.7, ease: "power2.inOut" });
+            gsap.to(bookGroup.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.7, ease: "power2.inOut" });
 
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2;
@@ -1400,20 +1369,15 @@
                 ease: "power2.out"
             });
 
-            gsap.to(modalWrapper, {
-                opacity: 0,
-                duration: 0.52,
-                ease: "power2.in"
-            });
+            gsap.to(modalWrapper, { opacity: 0, duration: 0.52, ease: "power2.in" });
         }
         btnPlaneClose.onclick = closePlane;
         modalWrapper.onclick = (e) => {
             if (e.target === modalWrapper && !isGraphFullscreen) closePlane();
         };
 
-        // 全屏切换：涂鸦自动清除
         function toggleGraphFullscreen() {
-            clearGraffiti(); // ⭐ 全屏切换自动清除涂鸦
+            clearGraffiti();
             isGraphFullscreen = !isGraphFullscreen;
             plane2DContainer.classList.toggle('is-fullscreen', isGraphFullscreen);
             btnFsIcon.innerText = isGraphFullscreen ? "🗗" : "⛶";
@@ -1433,7 +1397,7 @@
         });
 
         /* ========================================================
-           6. 动点往返摆动、分支与交互控制
+           6. 动点往返摆动控制
            ======================================================== */
         const btnAutoPlay = document.getElementById('btn-auto-play');
         const btnToggleTrace = document.getElementById('btn-toggle-trace');
@@ -1542,13 +1506,9 @@
                     <h3>【原题解析】双曲线第一定义</h3>
                     <div>圆 $C_1: x^2 + (y+5)^2 = 1 \\implies M_1(0, -5), r_1 = 1$<br>
                     圆 $C_2: x^2 + (y-5)^2 = 49 \\implies M_2(0, 5), r_2 = 7$</div>
-                    <div class="formula-highlight">
-                        $|M_1 M_2| = 10 = 2c$
-                    </div>
+                    <div class="formula-highlight">$|M_1 M_2| = 10 = 2c$</div>
                     <div>动圆 $P(x,y)$ 与两圆外切：</div>
-                    <div class="formula-highlight">
-                        $|PM_2| - |PM_1| = (R+7) - (R+1) = 6 = 2a$
-                    </div>
+                    <div class="formula-highlight">$|PM_2| - |PM_1| = (R+7) - (R+1) = 6 = 2a$</div>
                     <div>$2a = 6 < 2c = 10$，且 $|PM_2| > |PM_1|$，点 $P$ 距离 $M_1$ 更近，轨迹为<b>双曲线下支</b>：</div>
                     <div class="formula-highlight">
                         $a=3, c=5 \\implies b^2 = 16$<br>
@@ -1571,9 +1531,7 @@
                     焦点距 $|F_1 F_2| = 4 = 2c \\implies c=2$</div>
                     <div>• 动圆与 $F_1$ <b>内含内切</b>：$|CF_1| = R - 1$<br>
                     • 动圆与 $F_2$ <b>外切</b>：$|CF_2| = R + 1$</div>
-                    <div class="formula-highlight">
-                        $$|CF_2| - |CF_1| = 2 = 2a$$
-                    </div>
+                    <div class="formula-highlight">$$|CF_2| - |CF_1| = 2 = 2a$$</div>
                     <div>$|CF_2| > |CF_1|$，轨迹为双曲线<b>左支</b>：</div>
                     <div class="formula-highlight">
                         $a=1, c=2 \\implies b^2 = 3$<br>
@@ -1595,17 +1553,11 @@
                     <h3>【原题解析】化折线为垂线段</h3>
                     <div>双曲线 $\\dfrac{x^2}{2} - y^2 = 1 \\implies a=\\sqrt{2}, b=1, c=\\sqrt{3}$。<br>
                     渐近线：$l: x - \\sqrt{2}y = 0$。</div>
-                    <div class="formula-highlight">
-                        $|PF_1| = |PF_2| + 2a = |PF_2| + 2\\sqrt{2}$
-                    </div>
+                    <div class="formula-highlight">$|PF_1| = |PF_2| + 2a = |PF_2| + 2\\sqrt{2}$</div>
                     <div>距离转化：</div>
-                    <div class="formula-highlight">
-                        $$|PF_1| + |PQ| = |PF_2| + |PQ| + 2\\sqrt{2}$$
-                    </div>
+                    <div class="formula-highlight">$$|PF_1| + |PQ| = |PF_2| + |PQ| + 2\\sqrt{2}$$</div>
                     <div>当 $F_2, P, Q$ 三点共线且 $F_2 Q \\perp l$ 时取得最小值：</div>
-                    <div class="formula-highlight">
-                        $$\\min(|PF_2| + |PQ|) = d(F_2, l) = b = 1$$
-                    </div>
+                    <div class="formula-highlight">$$\\min(|PF_2| + |PQ|) = d(F_2, l) = b = 1$$</div>
                     <div>最小值：$2\\sqrt{2} + 1$。正确选项：<span class="ans-badge">D</span></div>
                     <div class="slider-control-group" style="margin-top:8px;">
                         <div class="slider-row">
@@ -1628,9 +1580,7 @@
                         </div>
                         <input type="range" id="slider-e" min="0.25" max="0.88" step="0.01" value="${paramEllipseE}">
                     </div>
-                    <div class="formula-highlight">
-                        $$\\frac{|PF|}{|PM|} = e = \\frac{c}{a} \\quad (0 < e < 1)$$
-                    </div>
+                    <div class="formula-highlight">$$\\frac{|PF|}{|PM|} = e = \\frac{c}{a} \\quad (0 < e < 1)$$</div>
                 `;
             } else if (key === 'el-graph') {
                 title = "❷ 椭圆图形分布 · 焦点与准线";
@@ -1638,9 +1588,7 @@
                 html = `
                     <h3>【几何特征】准线位置与离心率</h3>
                     <div>右焦点 $F(c,0)$，对应右准线方程为 $x = \\frac{a^2}{c} = \\frac{a}{e}$。</div>
-                    <div class="formula-highlight">
-                        $$c = ae, \\quad \\text{准线: } x = \\pm \\frac{a}{e}$$
-                    </div>
+                    <div class="formula-highlight">$$c = ae, \\quad \\text{准线: } x = \\pm \\frac{a}{e}$$</div>
                 `;
             } else if (key === 'el-eq') {
                 title = "❸ 椭圆标准方程的代数推导";
@@ -1648,9 +1596,7 @@
                 html = `
                     <h3>【推导过程】</h3>
                     <div>动点 $P(x,y)$，焦点 $F(c,0)$，准线 $l: x = \\frac{a^2}{c}$：</div>
-                    <div class="formula-highlight">
-                        $$\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1 \\quad (a > b > 0)$$
-                    </div>
+                    <div class="formula-highlight">$$\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1 \\quad (a > b > 0)$$</div>
                 `;
             } else if (key === 'el-verify') {
                 title = "❹ 椭圆特殊点验证 · 顶点极限";
@@ -1667,27 +1613,29 @@
                 tag = "定差为 2a";
                 html = `
                     <h3>【核心定义】两焦点距离差的绝对值为定值</h3>
-                    <div class="formula-highlight">
-                        $$|\\,|PF_1| - |PF_2|\\,| = 2a$$
-                    </div>
+                    <div class="formula-highlight">$$|\\,|PF_1| - |PF_2|\\,| = 2a$$</div>
                 `;
             } else if (key === 'hyp-def2') {
                 title = "❷ 双曲线第二定义：焦准距比";
                 tag = "统一定义 (e > 1)";
                 html = `
                     <h3>【核心定义】到焦点与准线的距离比为 e > 1</h3>
-                    <div class="formula-highlight">
-                        $$\\frac{|PF|}{|PH|} = e = \\frac{c}{a} > 1$$
-                    </div>
+                    <div class="formula-highlight">$$\\frac{|PF|}{|PH|} = e = \\frac{c}{a} > 1$$</div>
                 `;
             } else if (key === 'pa-def') {
                 title = "一、抛物线的定义";
                 tag = "等距性 (e = 1)";
                 html = `
                     <h3>【核心定义】焦点与准线等距</h3>
-                    <div class="formula-highlight">
-                        $$|PF| = |PM| \\iff \\frac{|PF|}{|PM|} = 1$$
+                    <div>平面内与一个定点 $F$ 和一条定直线 $l$ ($F \\notin l$) 距离相等的点的轨迹。</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节焦准距 $p$:</span>
+                            <span id="label-p-val">${paramParabolaP.toFixed(1)}</span>
+                        </div>
+                        <input type="range" id="slider-p" min="1.2" max="4.5" step="0.1" value="${paramParabolaP}">
                     </div>
+                    <div class="formula-highlight">$$|PF| = |PM| \\iff \\frac{|PF|}{|PM|} = 1$$</div>
                 `;
             } else {
                 const mapTitles = {
@@ -1696,11 +1644,30 @@
                     'pa-up':    '二、抛物线：x² = 2py (向上开口)',
                     'pa-down':  '二、抛物线：x² = -2py (向下开口)'
                 };
-                title = mapTitles[key] || "抛物线性质";
+                const mapProps = {
+                    'pa-right': { f: '(\\frac{p}{2}, 0)', l: 'x = -\\frac{p}{2}', form: 'y^2 = 2px' },
+                    'pa-left':  { f: '(-\\frac{p}{2}, 0)', l: 'x = \\frac{p}{2}', form: 'y^2 = -2px' },
+                    'pa-up':    { f: '(0, \\frac{p}{2})', l: 'y = -\\frac{p}{2}', form: 'x^2 = 2py' },
+                    'pa-down':  { f: '(0, -\\frac{p}{2})', l: 'y = \\frac{p}{2}', form: 'x^2 = -2py' }
+                };
+                const prop = mapProps[key] || mapProps['pa-right'];
+                title = mapTitles[key] || "抛物线标准方程与几何性质";
                 tag = "标准方程与性质";
                 html = `
-                    <h3>【几何性质】焦半径与准线距相等</h3>
+                    <h3>【几何性质】焦点与准线</h3>
+                    <div>方程：$${prop.form} \\quad (p > 0)$<br>
+                    • 焦点坐标：$F${prop.f}$<br>
+                    • 准线方程：$${prop.l}$<br>
+                    • 焦准距：$p$</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节参数 $p$:</span>
+                            <span id="label-p-val">${paramParabolaP.toFixed(1)}</span>
+                        </div>
+                        <input type="range" id="slider-p" min="1.2" max="4.5" step="0.1" value="${paramParabolaP}">
+                    </div>
                     <div class="formula-highlight">$$|PF| \\equiv |PM|$$</div>
+                    <div>拖动或自动运动动点 $P$，焦半径与准线距完全相等！</div>
                 `;
             }
 
@@ -1727,10 +1694,18 @@
                 if (lbl) lbl.innerText = paramEllipseE.toFixed(2);
                 tracePoints = [];
             };
+
+            const sP = document.getElementById('slider-p');
+            if (sP) sP.oninput = (e) => {
+                paramParabolaP = parseFloat(e.target.value);
+                const lbl = document.getElementById('label-p-val');
+                if (lbl) lbl.innerText = paramParabolaP.toFixed(1);
+                tracePoints = [];
+            };
         }
 
         /* ========================================================
-           8. 核心绘制系统：标准坐标轴 + 无多余斜线
+           8. 核心绘制系统：标准坐标轴与抛物线四向几何精准绘制
            ======================================================== */
         function drawCanvasLine(ctx, x1, y1, x2, y2, isDash = false, color = "#261d15", width = 2) {
             ctx.save(); ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width;
@@ -1780,7 +1755,6 @@
             ctx.fillStyle = "#64748b";
             ctx.fill();
 
-            // 轴名称与原点
             ctx.font = "bold 15px 'KaiTi', serif";
             ctx.fillStyle = "#475569";
             ctx.textAlign = "right";
@@ -1800,7 +1774,6 @@
 
             p2dCtx.clearRect(0, 0, w, h);
 
-            // 淡雅纸质网格背景
             p2dCtx.save();
             p2dCtx.strokeStyle = "rgba(218, 202, 181, 0.35)";
             p2dCtx.lineWidth = 1;
@@ -1810,7 +1783,6 @@
 
             const cx = w * 0.48, cy = h * 0.5;
 
-            // ⭐ 仅当非动画展开状态且用户主动打开轨迹时才渲染轨迹线
             if (isTraceEnabled && !isPlaneTransitioning && tracePoints.length > 1) {
                 p2dCtx.save();
                 p2dCtx.strokeStyle = "rgba(180, 61, 14, 0.82)";
@@ -1877,7 +1849,6 @@
                 const distM2 = Math.hypot(Px - M2.x, Py - M2.y);
                 const R = distM1 - M1.r;
 
-                // ⭐ 绝不在动效期间记录打点
                 if (isTraceEnabled && !isPlaneTransitioning) {
                     tracePoints.push({ x: px, y: py });
                     if (tracePoints.length > 500) tracePoints.shift();
@@ -2227,7 +2198,7 @@
                     drawCanvasText(p2dCtx, `比值 e ≡ ${(ratio).toFixed(2)} (>1)`, 135, 82, "#0284c7", "bold 14px monospace");
                 }
 
-            // ==================== F. 前两页概念：抛物线绘制 ====================
+            // ==================== F. ⭐ 抛物线四向精准几何绘制 ====================
             } else {
                 drawStandardAxes(p2dCtx, cx, cy, w, h);
 
@@ -2239,40 +2210,62 @@
                 else if (currentActivePlaneKey === 'pa-down') dir = 'down';
 
                 let fx = cx, fy = cy, lx1 = 0, ly1 = 0, lx2 = 0, ly2 = 0;
+                let px = 0, py = 0, mx = 0, my = 0;
+                const t = dynamicParabolaT;
+
                 if (dir === 'right') {
-                    fx = cx + pPx/2; fy = cy;
-                    lx1 = cx - pPx/2; ly1 = 25; lx2 = cx - pPx/2; ly2 = h - 25;
+                    // y^2 = 2px: 焦点 (p/2, 0), 准线 x = -p/2
+                    fx = cx + pPx / 2; fy = cy;
+                    lx1 = cx - pPx / 2; ly1 = 20; lx2 = cx - pPx / 2; ly2 = h - 20;
+                    px = cx + ((t * t) / (2 * mathP)) * MATH_SCALE;
+                    py = cy - t * MATH_SCALE;
+                    mx = cx - pPx / 2; my = py;
                 } else if (dir === 'left') {
-                    fx = cx - pPx/2; fy = cy;
-                    lx1 = cx + pPx/2; ly1 = 25; lx2 = cx + pPx/2; ly2 = h - 25;
+                    // y^2 = -2px: 焦点 (-p/2, 0), 准线 x = p/2
+                    fx = cx - pPx / 2; fy = cy;
+                    lx1 = cx + pPx / 2; ly1 = 20; lx2 = cx + pPx / 2; ly2 = h - 20;
+                    px = cx - ((t * t) / (2 * mathP)) * MATH_SCALE;
+                    py = cy - t * MATH_SCALE;
+                    mx = cx + pPx / 2; my = py;
                 } else if (dir === 'up') {
-                    fx = cx; fy = cy - pPx/2;
-                    lx1 = 25; ly1 = cy + pPx/2; lx2 = w - 25; ly2 = cy + pPx/2;
+                    // x^2 = 2py: 焦点 (0, p/2) 位于上方, 准线 y = -p/2 位于下方
+                    fx = cx; fy = cy - pPx / 2;
+                    lx1 = 20; ly1 = cy + pPx / 2; lx2 = w - 20; ly2 = cy + pPx / 2;
+                    px = cx + t * MATH_SCALE;
+                    py = cy - ((t * t) / (2 * mathP)) * MATH_SCALE;
+                    mx = px; my = cy + pPx / 2;
                 } else {
-                    fx = cx; fy = cy + pPx/2;
-                    lx1 = 25; ly1 = cy - pPx/2; lx2 = w - 25; ly2 = cy - pPx/2;
+                    // x^2 = -2py: 焦点 (0, -p/2) 位于下方, 准线 y = p/2 位于上方
+                    fx = cx; fy = cy + pPx / 2;
+                    lx1 = 20; ly1 = cy - pPx / 2; lx2 = w - 20; ly2 = cy - pPx / 2;
+                    px = cx + t * MATH_SCALE;
+                    py = cy + ((t * t) / (2 * mathP)) * MATH_SCALE;
+                    mx = px; my = cy - pPx / 2;
                 }
 
+                // 绘制准线
                 drawCanvasLine(p2dCtx, lx1, ly1, lx2, ly2, false, "#d97706", 2.2);
-                drawCanvasText(p2dCtx, "准线 l", dir === 'up' || dir === 'down' ? w - 25 : lx1, dir === 'up' || dir === 'down' ? ly1 - 14 : 16, "#d97706", "bold 14px 'KaiTi'");
+                let labelX = (dir === 'up' || dir === 'down') ? w - 30 : lx1;
+                let labelY = (dir === 'up' || dir === 'down') ? ly1 - 12 : 22;
+                drawCanvasText(p2dCtx, "准线 l", labelX, labelY, "#d97706", "bold 14px 'KaiTi'");
 
-                p2dCtx.fillStyle = "#dc2626"; p2dCtx.beginPath(); p2dCtx.arc(fx, fy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
-                drawCanvasText(p2dCtx, "F", fx + 14, fy + 14, "#dc2626", "bold 15px 'KaiTi'");
-
-                const tVal = dynamicParabolaT;
-                let px = 0, py = 0, mx = 0, my = 0;
-                if (dir === 'right') {
-                    px = cx + ((tVal*tVal)/(2*mathP)) * MATH_SCALE; py = cy + tVal * MATH_SCALE;
-                    mx = cx - pPx/2; my = py;
-                } else if (dir === 'left') {
-                    px = cx - ((tVal*tVal)/(2*mathP)) * MATH_SCALE; py = cy + tVal * MATH_SCALE;
-                    mx = cx + pPx/2; my = py;
-                } else if (dir === 'up') {
-                    px = cx + tVal * MATH_SCALE; py = cy - ((tVal*tVal)/(2*mathP)) * MATH_SCALE;
-                    mx = px; my = cy + pPx/2;
-                } else {
-                    px = cx + tVal * MATH_SCALE; py = cy + ((tVal*tVal)/(2*mathP)) * MATH_SCALE;
-                    mx = px; my = cy - pPx/2;
+                // 底图曲线
+                if (showBaseCurve) {
+                    p2dCtx.save();
+                    p2dCtx.strokeStyle = "#0284c7";
+                    p2dCtx.lineWidth = 3.2;
+                    p2dCtx.beginPath();
+                    const span = 5.2;
+                    for (let s = -span; s <= span; s += 0.1) {
+                        let rx = 0, ry = 0;
+                        if (dir === 'right') { rx = cx + ((s * s) / (2 * mathP)) * MATH_SCALE; ry = cy - s * MATH_SCALE; }
+                        else if (dir === 'left') { rx = cx - ((s * s) / (2 * mathP)) * MATH_SCALE; ry = cy - s * MATH_SCALE; }
+                        else if (dir === 'up') { rx = cx + s * MATH_SCALE; ry = cy - ((s * s) / (2 * mathP)) * MATH_SCALE; }
+                        else { rx = cx + s * MATH_SCALE; ry = cy + ((s * s) / (2 * mathP)) * MATH_SCALE; }
+                        if (s === -span) p2dCtx.moveTo(rx, ry); else p2dCtx.lineTo(rx, ry);
+                    }
+                    p2dCtx.stroke();
+                    p2dCtx.restore();
                 }
 
                 if (isTraceEnabled && !isPlaneTransitioning) {
@@ -2280,15 +2273,22 @@
                     if (tracePoints.length > 500) tracePoints.shift();
                 }
 
+                // 连接 PF 与 PM
                 drawCanvasLine(p2dCtx, px, py, fx, fy, false, "#dc2626", 2.6);
                 drawCanvasLine(p2dCtx, px, py, mx, my, false, "#059669", 2.6);
 
-                p2dCtx.fillStyle = "#059669"; p2dCtx.beginPath(); p2dCtx.arc(mx, my, 4.5, 0, Math.PI * 2); p2dCtx.fill();
-                drawCanvasText(p2dCtx, "M", mx + 14, my - 8, "#059669", "bold 14px 'KaiTi'");
+                // 焦点 F
+                p2dCtx.fillStyle = "#dc2626"; p2dCtx.beginPath(); p2dCtx.arc(fx, fy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "F", fx + (dir === 'left' ? -16 : 14), fy + (dir === 'up' ? -14 : 14), "#dc2626", "bold 15px 'KaiTi'");
 
+                // 垂足 M
+                p2dCtx.fillStyle = "#059669"; p2dCtx.beginPath(); p2dCtx.arc(mx, my, 4.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "M", mx + (dir === 'right' ? -14 : 14), my + (dir === 'down' ? -12 : 12), "#059669", "bold 14px 'KaiTi'");
+
+                // 动点 P
                 p2dCtx.fillStyle = "#2563eb"; p2dCtx.beginPath(); p2dCtx.arc(px, py, 8, 0, Math.PI * 2); p2dCtx.fill();
                 p2dCtx.strokeStyle = "#ffffff"; p2dCtx.lineWidth = 2.5; p2dCtx.stroke();
-                drawCanvasText(p2dCtx, "P", px + 16, py - 16, "#1e3a8a", "bold 15px 'KaiTi'");
+                drawCanvasText(p2dCtx, "P", px + (dir === 'left' ? -16 : 16), py - 16, "#1e3a8a", "bold 15px 'KaiTi'");
 
                 const realD1 = Math.hypot(px - fx, py - fy) / MATH_SCALE;
                 const realD2 = Math.hypot(px - mx, py - my) / MATH_SCALE;
@@ -2349,7 +2349,7 @@
                 else if (currentActivePlaneKey === 'pa-down') dir = 'down';
 
                 if (dir === 'right' || dir === 'left') {
-                    dynamicParabolaT = Math.max(-4.5, Math.min(4.5, dy / MATH_SCALE));
+                    dynamicParabolaT = Math.max(-4.5, Math.min(4.5, -dy / MATH_SCALE));
                 } else {
                     dynamicParabolaT = Math.max(-4.5, Math.min(4.5, dx / MATH_SCALE));
                 }
@@ -2456,7 +2456,7 @@
         });
 
         /* ========================================================
-           10. 3D 热区拾取逻辑
+           10. ⭐ 3D 热区拾取逻辑（精确纠正坐标偏移）
            ======================================================== */
         function handlePointerTap(clientX, clientY) {
             if (isAnimating || isPlaneActive || isPlaneTransitioning) return;
@@ -2507,7 +2507,7 @@
                 }
                 if (hitPoint.x < -3.5) isLeftPage = true;
 
-                // 左页：双曲线
+                // 左页：双曲线第一与第二定义
                 if (isLeftPage) {
                     const localPt = bookCover.worldToLocal(hitPoint.clone());
                     if (localPt.z < 0) riseUpPlaneCenter('hyp-def2', clientX, clientY);
@@ -2517,25 +2517,34 @@
 
                 // 右页：椭圆与抛物线
                 const localPt = pageLeafMesh.worldToLocal(hitPoint.clone());
-                const x = localPt.x;
-                const z = localPt.z;
+                const x = localPt.x; // 局部坐标范围严格为 0 到 7.0
+                const z = localPt.z; // 局部坐标范围为 -4.9 到 4.9
 
+                // 上半部分：椭圆
                 if (z < 0) {
-                    if (z < -2.4) {
-                        if (x < 0) riseUpPlaneCenter('el-def', clientX, clientY);
-                        else riseUpPlaneCenter('el-graph', clientX, clientY);
+                    if (x < 3.5) {
+                        if (z < -2.4) riseUpPlaneCenter('el-def', clientX, clientY);
+                        else riseUpPlaneCenter('el-eq', clientX, clientY);
                     } else {
-                        if (x < 0) riseUpPlaneCenter('el-eq', clientX, clientY);
+                        if (z < -2.4) riseUpPlaneCenter('el-graph', clientX, clientY);
                         else riseUpPlaneCenter('el-verify', clientX, clientY);
                     }
-                } else {
-                    if (z < 1.4) {
+                } 
+                // 下半部分：抛物线
+                else {
+                    if (z < 1.6) {
                         riseUpPlaneCenter('pa-def', clientX, clientY);
                     } else {
-                        if (x < -1.75) riseUpPlaneCenter('pa-right', clientX, clientY);
-                        else if (x < 0) riseUpPlaneCenter('pa-left', clientX, clientY);
-                        else if (x < 1.75) riseUpPlaneCenter('pa-up', clientX, clientY);
-                        else riseUpPlaneCenter('pa-down', clientX, clientY);
+                        // ⭐ 核心修复：按 0 到 7.0 四等分，严密对应四向开口
+                        if (x < 1.75) {
+                            riseUpPlaneCenter('pa-right', clientX, clientY);
+                        } else if (x < 3.5) {
+                            riseUpPlaneCenter('pa-left', clientX, clientY);
+                        } else if (x < 5.25) {
+                            riseUpPlaneCenter('pa-up', clientX, clientY);
+                        } else {
+                            riseUpPlaneCenter('pa-down', clientX, clientY);
+                        }
                     }
                 }
             }
