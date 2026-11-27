@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer">
+    <title>高中数学 - 圆锥曲线统一定义交互课堂</title>
+
+    <!-- KaTeX 数学公式排版引擎 -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            overscroll-behavior: none;
+            background: radial-gradient(circle at 50% 45%, #f6f1e8 0%, #ece2d2 60%, #d8caa5 100%);
+            font-family: "KaiTi", "STKaiti", "楷体", "Kaiti SC", "SimKai", serif;
+            color: #2c2117;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            touch-action: none;
+        }
+
+        /* 左上角：合上课本按钮 */
+        #top-left-bar {
+            position: absolute;
+            top: 18px;
+            left: 20px;
+            z-index: 22;
+        }
+
+        #btn-close-book {
+            display: none;
+            background: #eddcc5;
+            border: 1.5px solid #be9c76;
+            color: #4a2810;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(70, 50, 30, 0.18);
+            transition: all 0.25s;
+        }
+        #btn-close-book:hover {
+            background: #e2c7a3;
+            transform: scale(1.05);
+        }
+
+        /* 底部信息提示 */
+        #top-bar {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(248, 242, 233, 0.96);
+            backdrop-filter: blur(10px);
+            padding: 8px 24px;
+            border-radius: 30px;
+            box-shadow: 0 4px 18px rgba(70, 55, 38, 0.15);
+            font-size: 15px;
+            font-weight: bold;
+            color: #3b2c1d;
+            border: 1px solid #d8cab5;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* ========================================================
+           ⭐ 魔法卡片升起光芒 (生命力光环)
+           ======================================================== */
+        .magic-card-spark {
+            position: fixed;
+            width: 110px;
+            height: 140px;
+            margin-left: -55px;
+            margin-top: -70px;
+            border: 2.5px solid #f59e0b;
+            border-radius: 14px;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.65) 0%, rgba(217, 119, 6, 0.25) 60%, transparent 100%);
+            box-shadow: 0 0 35px #f59e0b, inset 0 0 20px #fde68a;
+            pointer-events: none;
+            z-index: 38;
+        }
+
+        /* ========================================================
+           ⭐ 3D 透视舞台包装器
+           ======================================================== */
+        #modal-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 40;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(26, 18, 10, 0.58);
+            backdrop-filter: blur(6px);
+            perspective: 1600px;
+            transform-style: preserve-3d;
+            touch-action: none;
+        }
+
+        #plane2d-container {
+            width: 1220px;
+            max-width: 96vw;
+            height: 700px;
+            max-height: 90vh;
+            background: #fbf8f2;
+            border: 2px solid #dfc7a7;
+            border-radius: 22px;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+                        0 0 25px rgba(217, 119, 6, 0.25),
+                        0 35px 85px rgba(15, 10, 5, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform-origin: center center;
+            will-change: transform, opacity;
+            position: relative;
+        }
+
+        .plane2d-header {
+            background: #ede3d2;
+            border-bottom: 2px solid #d8c8af;
+            padding: 10px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            transition: background 0.3s;
+        }
+        .plane2d-header.fs-header-active {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            z-index: 150;
+            background: rgba(237, 227, 210, 0.95);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        .plane2d-title {
+            font-size: 19px;
+            font-weight: bold;
+            color: #2b1f13;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .plane2d-tag {
+            background: #0284c7;
+            color: #fff;
+            font-size: 13px;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-family: sans-serif;
+        }
+
+        .btn-fullscreen-header {
+            background: #0284c7;
+            color: #ffffff;
+            border: 1px solid #0369a1;
+            padding: 3px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 2px;
+        }
+        .btn-fullscreen-header:hover {
+            background: #0369a1;
+            transform: scale(1.05);
+        }
+        .btn-fullscreen-header.is-active {
+            background: #dc2626;
+            border-color: #b91c1c;
+        }
+
+        .plane2d-body {
+            flex: 1;
+            display: flex;
+            padding: 12px;
+            gap: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ⭐ 图像区域大幅拓展占比 */
+        .plane2d-canvas-box {
+            flex: 2.6; /* 核心调整：图像区大幅扩大 */
+            background: #ffffff;
+            border: 1.5px solid #ded2bf;
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: row;
+            will-change: top, left, width, height, border-radius;
+        }
+
+        /* 左侧垂直工具栏 */
+        .canvas-left-toolbar {
+            width: 112px;
+            min-width: 112px;
+            background: #f2e9dc;
+            border-right: 1.5px solid #dacab5;
+            padding: 10px 7px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .toolbar-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .toolbar-divider {
+            height: 1.5px;
+            background: #dacbb5;
+            margin: 2px 0;
+        }
+
+        .color-palette {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 2px 0;
+        }
+
+        .canvas-interactive-area {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #interactive-2d-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+        #graph-draw-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+            cursor: default;
+        }
+
+        /* ⭐ 右侧理论区精细缩小 */
+        .plane2d-info-box {
+            flex: 0.85; /* 核心调整：右侧大幅缩小 */
+            min-width: 260px;
+            max-width: 310px;
+            background: #f6efe2;
+            border: 1.5px solid #dacbb5;
+            border-radius: 14px;
+            padding: 12px 14px;
+            overflow-y: auto;
+            font-size: 13.5px;
+            line-height: 1.68;
+            color: #332314;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .plane2d-info-box h3 {
+            font-size: 16px;
+            color: #1a120a;
+            border-left: 4px solid #b43d0e;
+            padding-left: 8px;
+        }
+
+        .slider-control-group {
+            background: #ebe1d0;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #d2be9f;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .tool-btn {
+            background: #f7f1e6;
+            border: 1px solid #c9b49b;
+            color: #3e2815;
+            padding: 5px 4px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .tool-btn.active {
+            background: #0284c7;
+            color: white;
+            border-color: #0284c7;
+        }
+        .tool-btn-highlight {
+            background: #fbeee4;
+            border-color: #d77f3e;
+            color: #923a07;
+        }
+        .tool-btn-highlight.active {
+            background: #b43d0e;
+            color: white;
+            border-color: #b43d0e;
+        }
+        .tool-btn-branch {
+            background: #e0f2fe;
+            border-color: #38bdf8;
+            color: #0369a1;
+        }
+
+        .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .color-dot.active {
+            border-color: #000000;
+            transform: scale(1.18);
+        }
+
+        .btn-plane-return {
+            background: #b43d0e;
+            color: white;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 3px 10px rgba(180, 61, 14, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-plane-return:hover { transform: scale(1.05); }
+
+        .formula-highlight {
+            background: #ded0bc;
+            border: 1px dashed #ad9375;
+            padding: 5px 8px;
+            border-radius: 6px;
+            margin: 3px 0;
+            text-align: center;
+        }
+
+        .katex { font-size: 1.05em !important; color: #8b1818 !important; }
+    </style>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+
+    <!-- 左上角：合上课本按钮 -->
+    <div id="top-left-bar">
+        <button id="btn-close-book">📕 合上课本</button>
+    </div>
+
+    <!-- 底部状态说明 -->
+    <div id="top-bar">
+        <span id="top-text">📖 轻触封面即可翻开课本！</span>
+    </div>
+
+    <!-- ⭐ 3D 浮生卡片式弹窗 -->
+    <div id="modal-wrapper">
+        <div id="plane2d-container">
+            <div class="plane2d-header" id="plane2d-header">
+                <div class="plane2d-title">
+                    <span id="p2d-title-text">❶ 椭圆的第二定义 · 焦准距比</span>
+                    <span class="plane2d-tag" id="p2d-tag-text">统一定义</span>
+                    <button class="btn-fullscreen-header" id="btn-graph-fullscreen">
+                        <span id="btn-fs-icon">⛶</span> <span id="btn-fs-text">全屏</span>
+                    </button>
+                </div>
+                <button class="btn-plane-return" id="btn-plane-close">↩ 放回课本</button>
+            </div>
+
+            <div class="plane2d-body" id="plane2d-body">
+                <div class="plane2d-canvas-box" id="p2d-canvas-box">
+                    <!-- 左侧垂直工具栏 -->
+                    <div class="canvas-left-toolbar">
+                        <div class="toolbar-group">
+                            <button class="tool-btn active" id="btn-graph-drag">👆 拖动P点</button>
+                            <button class="tool-btn tool-btn-highlight" id="btn-auto-play">▶ 自动运动</button>
+                            <button class="tool-btn tool-btn-highlight" id="btn-toggle-trace">🪄 轨迹: 关</button>
+                            <button class="tool-btn tool-btn-highlight" id="btn-toggle-curve">👁️ 底图曲线</button>
+                            <button class="tool-btn tool-btn-branch" id="btn-switch-branch" style="display:none;">⇄ 切到左支</button>
+                            <button class="tool-btn" id="btn-clear-trace">🧹 清轨迹</button>
+                        </div>
+                        <div class="toolbar-divider"></div>
+                        <div class="toolbar-group">
+                            <button class="tool-btn" id="btn-graph-pen">✏️ 涂鸦</button>
+                            <button class="tool-btn" id="btn-graph-line">📏 直线</button>
+                            <button class="tool-btn" id="btn-graph-eraser">🧼 橡皮</button>
+                            <div class="color-palette">
+                                <div class="color-dot active g-dot" data-color="#dc2626" style="background:#dc2626;"></div>
+                                <div class="color-dot g-dot" data-color="#0284c7" style="background:#0284c7;"></div>
+                                <div class="color-dot g-dot" data-color="#1e293b" style="background:#1e293b;"></div>
+                            </div>
+                            <button class="tool-btn" id="btn-graph-clear" style="background:#e8d5c4;">🗑️ 清图</button>
+                        </div>
+                    </div>
+
+                    <!-- 扩大后的交互画布区域 -->
+                    <div class="canvas-interactive-area" id="canvas-interactive-area">
+                        <canvas id="interactive-2d-canvas"></canvas>
+                        <canvas id="graph-draw-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- 缩小收窄后的理论推导区 -->
+                <div class="plane2d-info-box" id="p2d-info-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        /* ========================================================
+           1. 3D 场景视角控制器
+           ======================================================== */
+        let controlsEnabled = true;
+
+        class TabletDualTouchControls {
+            constructor(camera, domElement) {
+                this.camera = camera;
+                this.domElement = domElement;
+
+                this.target = new THREE.Vector3(0, -0.6, 0);
+                this.minDistance = 4.0;
+                this.maxDistance = 22.0;
+
+                const offset = new THREE.Vector3().subVectors(this.camera.position, this.target);
+                this.radius = offset.length();
+                this.theta = Math.atan2(offset.x, offset.z);
+                this.phi = Math.acos(Math.max(-1, Math.min(1, offset.y / this.radius)));
+
+                this.targetRadius = this.radius;
+                this.targetTheta = this.theta;
+                this.targetPhi = this.phi;
+
+                this.isMouseDown = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.lastPinchDist = 0;
+
+                this.initListeners();
+            }
+
+            initListeners() {
+                window.addEventListener('contextmenu', e => e.preventDefault(), { passive: false });
+
+                window.addEventListener('touchstart', (e) => {
+                    if (!controlsEnabled || e.target.closest('#top-left-bar') || e.target.closest('#modal-wrapper')) return;
+
+                    if (e.touches.length === 1) {
+                        this.lastX = e.touches[0].clientX;
+                        this.lastY = e.touches[0].clientY;
+                    } else if (e.touches.length === 2) {
+                        const dx = e.touches[0].clientX - e.touches[1].clientX;
+                        const dy = e.touches[0].clientY - e.touches[1].clientY;
+                        this.lastPinchDist = Math.hypot(dx, dy);
+                    }
+                }, { passive: false });
+
+                window.addEventListener('touchmove', (e) => {
+                    if (!controlsEnabled || e.target.closest('#top-left-bar') || e.target.closest('#modal-wrapper')) return;
+
+                    if (e.touches.length === 1) {
+                        const curX = e.touches[0].clientX;
+                        const curY = e.touches[0].clientY;
+                        const dx = curX - this.lastX;
+                        const dy = curY - this.lastY;
+                        this.lastX = curX;
+                        this.lastY = curY;
+
+                        this.targetTheta -= dx * 0.0055;
+                        this.targetPhi -= dy * 0.0055;
+                        this.targetPhi = Math.max(0.08, Math.min(Math.PI - 0.08, this.targetPhi));
+                    } else if (e.touches.length === 2) {
+                        const dx = e.touches[0].clientX - e.touches[1].clientX;
+                        const dy = e.touches[0].clientY - e.touches[1].clientY;
+                        const dist = Math.hypot(dx, dy);
+                        const pinchDelta = dist - this.lastPinchDist;
+                        this.lastPinchDist = dist;
+
+                        this.targetRadius -= pinchDelta * 0.025;
+                        this.targetRadius = Math.max(this.minDistance, Math.min(this.maxDistance, this.targetRadius));
+                    }
+                }, { passive: false });
+
+                window.addEventListener('mousedown', (e) => {
+                    if (!controlsEnabled || e.target.closest('#top-left-bar') || e.target.closest('#modal-wrapper')) return;
+                    this.isMouseDown = true;
+                    this.lastX = e.clientX;
+                    this.lastY = e.clientY;
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!this.isMouseDown || !controlsEnabled) return;
+                    const dx = e.clientX - this.lastX;
+                    const dy = e.clientY - this.lastY;
+                    this.lastX = e.clientX;
+                    this.lastY = e.clientY;
+
+                    this.targetTheta -= dx * 0.0055;
+                    this.targetPhi -= dy * 0.0055;
+                    this.targetPhi = Math.max(0.08, Math.min(Math.PI - 0.08, this.targetPhi));
+                });
+
+                window.addEventListener('mouseup', () => { this.isMouseDown = false; });
+
+                window.addEventListener('wheel', (e) => {
+                    if (e.target.closest('#modal-wrapper') || !controlsEnabled) return;
+                    this.targetRadius += e.deltaY * 0.008;
+                    this.targetRadius = Math.max(this.minDistance, Math.min(this.maxDistance, this.targetRadius));
+                }, { passive: true });
+            }
+
+            update() {
+                this.radius += (this.targetRadius - this.radius) * 0.1;
+                this.theta += (this.targetTheta - this.theta) * 0.1;
+                this.phi += (this.targetPhi - this.phi) * 0.1;
+
+                const sinPhi = Math.sin(this.phi);
+                this.camera.position.x = this.target.x + this.radius * sinPhi * Math.sin(this.theta);
+                this.camera.position.y = this.target.y + this.radius * Math.cos(this.phi);
+                this.camera.position.z = this.target.z + this.radius * sinPhi * Math.cos(this.theta);
+                this.camera.lookAt(this.target);
+            }
+        }
+
+        /* ========================================================
+           2. 课本材质：左页双曲线，右页椭圆与抛物线
+           ======================================================== */
+        function createBookPagesTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 512;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = "#d8caa4"; ctx.fillRect(0, 0, 128, 512);
+            for (let y = 0; y < 512; y += 2) {
+                const alpha = (Math.sin(y * 0.9) * 0.15 + 0.25) + Math.random() * 0.12;
+                ctx.strokeStyle = `rgba(130, 110, 85, ${alpha})`; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke();
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(12, 1);
+            return tex;
+        }
+
+        function createLeftPageHyperbolaTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1440;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "#f5efe6";
+            ctx.fillRect(0, 0, 1024, 1440);
+            ctx.strokeStyle = "#ded1be";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(25, 25, 974, 1390);
+
+            ctx.fillStyle = "#332314";
+            ctx.font = "bold 32px serif";
+            ctx.textAlign = "center";
+            ctx.fillText("x²/a² - y²/b² = 1 ,  a, b > 0 ,  c² = a² + b² ,  e = c/a", 512, 70);
+
+            // ❶ 第一定义：距离差
+            ctx.strokeStyle = "#beab95";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(50, 95); ctx.lineTo(974, 95); ctx.stroke();
+
+            ctx.fillStyle = "#b43d0e";
+            ctx.beginPath(); ctx.arc(80, 140, 22, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 26px 'KaiTi'";
+            ctx.fillText("1", 80, 148);
+
+            ctx.fillStyle = "#8a2408";
+            ctx.font = "bold 36px 'KaiTi'";
+            ctx.textAlign = "left";
+            ctx.fillText("第一定义：距离差", 120, 150);
+
+            ctx.save();
+            ctx.translate(260, 420);
+            ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-200, 0); ctx.lineTo(200, 0); ctx.moveTo(0, -180); ctx.lineTo(0, 180); ctx.stroke();
+            ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 4;
+            ctx.beginPath();
+            for(let y = -160; y <= 160; y+=5) {
+                let x = 60 * Math.sqrt(1 + (y*y)/(70*70));
+                if (y === -160) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.beginPath();
+            for(let y = -160; y <= 160; y+=5) {
+                let x = -60 * Math.sqrt(1 + (y*y)/(70*70));
+                if (y === -160) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.fillStyle = "#dc2626";
+            ctx.beginPath(); ctx.arc(-110, 0, 5, 0, Math.PI*2); ctx.arc(110, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.font = "bold 18px serif";
+            ctx.fillText("F₁", -125, 25); ctx.fillText("F₂", 105, 25);
+            ctx.fillText("A₁", -75, 25); ctx.fillText("A₂", 50, 25);
+            ctx.fillStyle = "#2563eb";
+            ctx.beginPath(); ctx.arc(120, -115, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillText("P", 130, -125);
+            ctx.strokeStyle = "#e11d48"; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(-110, 0); ctx.lineTo(120, -115); ctx.stroke();
+            ctx.strokeStyle = "#eab308";
+            ctx.beginPath(); ctx.moveTo(110, 0); ctx.lineTo(120, -115); ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = "#2b1f13";
+            ctx.font = "bold 26px 'KaiTi'";
+            ctx.fillText("两焦点距离之差的绝对值为定值", 560, 220);
+            ctx.strokeStyle = "#b43d0e"; ctx.lineWidth = 3;
+            ctx.strokeRect(580, 260, 360, 75);
+            ctx.fillStyle = "#8a2408";
+            ctx.font = "bold 38px serif";
+            ctx.fillText("| |PF₁| - |PF₂| | = 2a", 605, 312);
+            ctx.fillStyle = "#4a3525";
+            ctx.font = "24px serif";
+            ctx.fillText("0 < 2a < 2c", 690, 380);
+            ctx.font = "bold 23px 'KaiTi'";
+            ctx.fillText("右支：|PF₁| - |PF₂| = 2a", 580, 440);
+            ctx.fillText("左支：|PF₂| - |PF₁| = 2a", 580, 490);
+
+            // ❷ 第二定义：焦准距比
+            ctx.strokeStyle = "#beab95";
+            ctx.beginPath(); ctx.moveTo(50, 680); ctx.lineTo(974, 680); ctx.stroke();
+
+            ctx.fillStyle = "#b43d0e";
+            ctx.beginPath(); ctx.arc(80, 730, 22, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 26px 'KaiTi'";
+            ctx.fillText("2", 80, 738);
+
+            ctx.fillStyle = "#8a2408";
+            ctx.font = "bold 36px 'KaiTi'";
+            ctx.fillText("第二定义：焦准距比", 120, 740);
+
+            ctx.save();
+            ctx.translate(260, 1060);
+            ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(-200, 0); ctx.lineTo(200, 0); ctx.moveTo(0, -190); ctx.lineTo(0, 190); ctx.stroke();
+            ctx.strokeStyle = "#0284c7"; ctx.lineWidth = 4;
+            ctx.beginPath();
+            for(let y = -170; y <= 170; y+=5) {
+                let x = 60 * Math.sqrt(1 + (y*y)/(70*70));
+                if (y === -170) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.beginPath();
+            for(let y = -170; y <= 170; y+=5) {
+                let x = -60 * Math.sqrt(1 + (y*y)/(70*70));
+                if (y === -170) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.strokeStyle = "#d97706"; ctx.lineWidth = 2.5; ctx.setLineDash([8, 6]);
+            ctx.beginPath(); ctx.moveTo(-35, -180); ctx.lineTo(-35, 180); ctx.moveTo(35, -180); ctx.lineTo(35, 180); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#d97706"; ctx.font = "16px serif";
+            ctx.fillText("x=-a²/c", -75, -190); ctx.fillText("x=a²/c", 20, -190);
+            const px = -115, py = -110;
+            ctx.fillStyle = "#2563eb";
+            ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillText("P", px - 25, py);
+            ctx.strokeStyle = "#059669"; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(-35, py); ctx.stroke();
+            ctx.fillStyle = "#059669";
+            ctx.beginPath(); ctx.arc(-35, py, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillText("H₁", -30, py - 10);
+            ctx.strokeStyle = "#eab308";
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(-110, 0); ctx.stroke();
+            ctx.fillStyle = "#dc2626";
+            ctx.beginPath(); ctx.arc(-110, 0, 5, 0, Math.PI*2); ctx.arc(110, 0, 5, 0, Math.PI*2); ctx.fill();
+            ctx.fillText("F₁", -125, 25); ctx.fillText("F₂", 105, 25);
+            ctx.restore();
+
+            ctx.fillStyle = "#8a2408";
+            ctx.font = "bold 34px serif";
+            ctx.fillText("|PF₁| / |PH₁| = |PF₂| / |PH₂| = e", 560, 840);
+            ctx.strokeStyle = "#b43d0e"; ctx.lineWidth = 3;
+            ctx.strokeRect(620, 900, 260, 90);
+            ctx.fillStyle = "#b43d0e";
+            ctx.font = "bold 56px serif";
+            ctx.fillText("e > 1", 680, 968);
+            ctx.fillStyle = "#2b1f13";
+            ctx.font = "bold 26px 'KaiTi'";
+            ctx.fillText("焦点与同侧准线对应", 620, 1060);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.generateMipmaps = true;
+            return tex;
+        }
+
+        function createInstantCoverTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 1440;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 1024, 1440);
+            grad.addColorStop(0, '#f2ece2'); grad.addColorStop(0.6, '#f6eee5'); grad.addColorStop(1, '#e8ded0');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, 1024, 1440);
+            ctx.fillStyle = "#2d5a43"; ctx.fillRect(0, 0, 1024, 220);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 38px 'KaiTi', serif"; ctx.fillText("普通高中教科书", 100, 95);
+            ctx.fillStyle = "#dfa143"; ctx.fillRect(100, 120, 220, 50);
+            ctx.fillStyle = "#1e3a2b"; ctx.font = "bold 30px 'KaiTi', serif"; ctx.fillText("必 修  第二册", 115, 156);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 30px 'KaiTi', serif"; ctx.fillText("A 版", 340, 156);
+            ctx.fillStyle = "#1b2c22"; ctx.font = "bold 160px 'KaiTi', serif"; ctx.fillText("数", 100, 520); ctx.fillText("学", 340, 520);
+            ctx.fillStyle = "#263d30"; ctx.font = "bold 40px 'KaiTi', serif"; ctx.fillText("人民教育出版社", 100, 1370);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.generateMipmaps = true;
+            return tex;
+        }
+
+        function processNoteImageToPaper(img, targetMaterial) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048; canvas.height = 2880;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#f5efe6";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#dfd3c0"; ctx.lineWidth = 12;
+            ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            ctx.save();
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.drawImage(img, 30, 30, canvas.width - 60, canvas.height - 60);
+            ctx.restore();
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.generateMipmaps = true;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            targetMaterial.map = tex;
+            targetMaterial.needsUpdate = true;
+        }
+
+        function createInstantPageTexture() {
+            const canvas = document.createElement('canvas'); canvas.width = 1440; canvas.height = 2048;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#f5efe6"; ctx.fillRect(0, 0, 1440, 2048);
+            ctx.fillStyle = "#0284c7"; ctx.font = "bold 58px 'KaiTi', serif"; ctx.textAlign = "center";
+            ctx.fillText("椭 圆 与 抛 物 线 焦 准 距 比", 720, 100);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function loadTextureFast(urls, callback) {
+            let loaded = false;
+            urls.forEach(url => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.referrerPolicy = "no-referrer";
+                img.onload = () => {
+                    if (loaded) return;
+                    loaded = true;
+                    callback(img);
+                };
+                img.src = url;
+            });
+        }
+
+        /* ========================================================
+           3. Three.js 课本搭建
+           ======================================================== */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 8.5, 15.0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
+        container.appendChild(renderer.domElement);
+
+        const controls = new TabletDualTouchControls(camera, renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xf8f2e6, 0.72));
+        const dirLight = new THREE.DirectionalLight(0xfff5ea, 0.52);
+        dirLight.position.set(7, 14, 9);
+        scene.add(dirLight);
+
+        const BOOK_NORMAL_Y = -1.2;
+        const BOOK_W = 7.0, BOOK_H = 9.8, BOOK_THICK = 0.38;
+
+        const bookGroup = new THREE.Group();
+        bookGroup.position.set(0, BOOK_NORMAL_Y, 0);
+        scene.add(bookGroup);
+
+        const pagesSideMat = new THREE.MeshStandardMaterial({ map: createBookPagesTexture(), roughness: 0.95 });
+        const bottomCoverMat = new THREE.MeshStandardMaterial({ color: '#b09673', roughness: 0.9 });
+        const innerPageMat = new THREE.MeshStandardMaterial({ map: createInstantPageTexture(), roughness: 0.85 });
+        const coverFrontMat = new THREE.MeshStandardMaterial({ map: createInstantCoverTexture(), roughness: 0.6 });
+        const leftHyperbolaPageMat = new THREE.MeshStandardMaterial({ map: createLeftPageHyperbolaTexture(), roughness: 0.85 });
+
+        const coverRaw = "https://picui.ogmua.cn/s1/2026/11/27/6b0931c649733.webp";
+        loadTextureFast([
+            coverRaw,
+            "https://images.weserv.nl/?url=" + encodeURIComponent(coverRaw) + "&output=webp&q=85",
+            "https://corsproxy.io/?" + encodeURIComponent(coverRaw)
+        ], (img) => {
+            const texture = new THREE.Texture(img);
+            texture.needsUpdate = true;
+            coverFrontMat.map = texture;
+            coverFrontMat.needsUpdate = true;
+        });
+
+        const pageRaw = "https://picui.ogmua.cn/s1/2026/11/27/6b092fd38397d.webp";
+        loadTextureFast([
+            pageRaw,
+            "https://images.weserv.nl/?url=" + encodeURIComponent(pageRaw) + "&output=webp&q=85",
+            "https://corsproxy.io/?" + encodeURIComponent(pageRaw)
+        ], (img) => {
+            processNoteImageToPaper(img, innerPageMat);
+        });
+
+        const bookBase = new THREE.Mesh(
+            new THREE.BoxGeometry(BOOK_W, BOOK_THICK, BOOK_H),
+            [pagesSideMat, pagesSideMat, innerPageMat, bottomCoverMat, pagesSideMat, pagesSideMat]
+        );
+        bookGroup.add(bookBase);
+
+        const coverPivot = new THREE.Group();
+        coverPivot.position.set(-BOOK_W / 2, BOOK_THICK / 2 + 0.015, 0);
+        bookGroup.add(coverPivot);
+
+        const coverGeo = new THREE.BoxGeometry(BOOK_W, 0.035, BOOK_H);
+        coverGeo.translate(BOOK_W / 2, 0, 0);
+
+        const bookCover = new THREE.Mesh(coverGeo, [pagesSideMat, pagesSideMat, coverFrontMat, leftHyperbolaPageMat, pagesSideMat, pagesSideMat]);
+        coverPivot.add(bookCover);
+
+        /* ========================================================
+           4. 翻书与合书逻辑
+           ======================================================== */
+        let isBookOpen = false;
+        let isAnimating = false;
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const topText = document.getElementById('top-text');
+        const btnCloseBook = document.getElementById('btn-close-book');
+
+        function openBook() {
+            if (isBookOpen || isAnimating) return;
+            isAnimating = true;
+            topText.innerHTML = "✨ 正在翻开课本...";
+
+            gsap.to(coverPivot.rotation, {
+                z: Math.PI * 0.98,
+                duration: 1.15,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    isBookOpen = true;
+                    isAnimating = false;
+                    btnCloseBook.style.display = 'inline-block';
+                    topText.innerHTML = "🎯 点击左右页面任一内容版块，即可体验从书中生出魔法卡片！";
+                    gsap.to(camera.position, { x: 0, y: 10, z: 9.5, duration: 1.0 });
+                }
+            });
+        }
+
+        function closeBook() {
+            if (isAnimating || !isBookOpen) return;
+            isAnimating = true;
+            topText.innerHTML = "✨ 正在合上课本...";
+
+            gsap.to(coverPivot.rotation, {
+                z: 0,
+                duration: 0.9,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    isBookOpen = false;
+                    isAnimating = false;
+                    btnCloseBook.style.display = 'none';
+                    topText.innerHTML = "📖 轻触封面即可翻开课本！";
+                }
+            });
+            gsap.to(camera.position, { x: 0, y: 8.5, z: 15.0, duration: 1.0, ease: "power2.out" });
+        }
+        btnCloseBook.onclick = closeBook;
+
+        /* ========================================================
+           ⭐ 5. 无回弹超调·平滑单调向前推进展示动效
+           ======================================================== */
+        const modalWrapper = document.getElementById('modal-wrapper');
+        const plane2DContainer = document.getElementById('plane2d-container');
+        const plane2dHeader = document.getElementById('plane2d-header');
+        const plane2dBody = document.getElementById('plane2d-body');
+        const btnPlaneClose = document.getElementById('btn-plane-close');
+        const p2dTitleText = document.getElementById('p2d-title-text');
+        const p2dTagText = document.getElementById('p2d-tag-text');
+        const p2dInfoContent = document.getElementById('p2d-info-content');
+
+        const p2dCanvasBox = document.getElementById('p2d-canvas-box');
+        const canvasInteractiveArea = document.getElementById('canvas-interactive-area');
+        const p2dCanvas = document.getElementById('interactive-2d-canvas');
+        const p2dCtx = p2dCanvas.getContext('2d');
+
+        const graphDrawCanvas = document.getElementById('graph-draw-canvas');
+        const graphDrawCtx = graphDrawCanvas.getContext('2d');
+        const btnGraphFullscreen = document.getElementById('btn-graph-fullscreen');
+        const btnFsIcon = document.getElementById('btn-fs-icon');
+        const btnFsText = document.getElementById('btn-fs-text');
+
+        let isGraphFullscreen = false;
+        let isFullscreenAnimating = false;
+        let fsPlaceholder = null;
+
+        let currentActivePlaneKey = null;
+        let isPlaneActive = false;
+        let isPlaneTransitioning = false;
+
+        let isAutoPlaying = false;
+        let isTraceEnabled = false;
+        let showBaseCurve = false;
+        let tracePoints = [];
+
+        let parabolaSpeedDir = 1;
+        let hyperbolaSpeedDir = 1;
+
+        let lastOriginScreenX = window.innerWidth / 2;
+        let lastOriginScreenY = window.innerHeight / 2;
+
+        let dynamicTheta = 0.85;
+        let dynamicParabolaT = 2.0;
+        let dynamicHyperbolaT = 0.8;
+        let dynamicHyperBranch = 1;
+        let isDraggingPoint = false;
+
+        let paramEllipseE = 0.65;
+        let paramParabolaP = 2.4;
+        let paramHyperbolaE = 1.6;
+
+        // 建立真实数学坐标比例尺
+        const MATH_SCALE = 38;
+
+        function resizeCanvases() {
+            const rect = canvasInteractiveArea.getBoundingClientRect();
+            if (rect.width < 10 || rect.height < 10) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+            p2dCanvas.width = Math.round(rect.width * dpr);
+            p2dCanvas.height = Math.round(rect.height * dpr);
+            p2dCtx.setTransform(1, 0, 0, 1, 0, 0);
+            p2dCtx.scale(dpr, dpr);
+
+            let tempG = null;
+            if (graphDrawCanvas.width > 0 && graphDrawCanvas.height > 0) {
+                tempG = document.createElement('canvas');
+                tempG.width = graphDrawCanvas.width;
+                tempG.height = graphDrawCanvas.height;
+                tempG.getContext('2d').drawImage(graphDrawCanvas, 0, 0);
+            }
+            graphDrawCanvas.width = Math.round(rect.width * dpr);
+            graphDrawCanvas.height = Math.round(rect.height * dpr);
+            graphDrawCtx.setTransform(1, 0, 0, 1, 0, 0);
+            graphDrawCtx.scale(dpr, dpr);
+            if (tempG) graphDrawCtx.drawImage(tempG, 0, 0, rect.width, rect.height);
+        }
+
+        function triggerBookSpawnEffect(x, y) {
+            const spark = document.createElement('div');
+            spark.className = 'magic-card-spark';
+            spark.style.left = x + 'px';
+            spark.style.top = y + 'px';
+            document.body.appendChild(spark);
+            gsap.fromTo(spark, 
+                { scale: 0.15, opacity: 1, rotation: -10 },
+                { scale: 2.2, opacity: 0, rotation: 35, duration: 0.75, ease: "power2.out", onComplete: () => spark.remove() }
+            );
+        }
+
+        /* ---------------- ⭐ 修复：无过冲超调、平滑向前展示 ---------------- */
+        function riseUpPlaneCenter(key, tapScreenX, tapScreenY) {
+            if (isPlaneTransitioning) return;
+            isPlaneTransitioning = true;
+            currentActivePlaneKey = key;
+            isPlaneActive = true;
+            controlsEnabled = false;
+
+            tracePoints = [];
+            isAutoPlaying = false;
+            updatePlayBtnUI();
+            showBaseCurve = false;
+            dynamicHyperBranch = 1;
+            parabolaSpeedDir = 1;
+            hyperbolaSpeedDir = 1;
+
+            renderPlaneInfo(key);
+
+            modalWrapper.style.display = 'flex';
+            resizeCanvases();
+            update2DCanvas();
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const startX = tapScreenX || centerX;
+            const startY = tapScreenY || centerY;
+            lastOriginScreenX = startX;
+            lastOriginScreenY = startY;
+
+            triggerBookSpawnEffect(startX, startY);
+
+            const deltaX = startX - centerX;
+            const deltaY = startY - centerY;
+
+            gsap.fromTo(modalWrapper, 
+                { opacity: 0 }, 
+                { opacity: 1, duration: 0.35, ease: "power2.out" }
+            );
+
+            // 初始小卡片形态
+            gsap.set(plane2DContainer, {
+                x: deltaX,
+                y: deltaY,
+                scale: 0.15,
+                rotationX: 35,
+                rotationY: deltaX > 0 ? -18 : 18,
+                rotationZ: deltaX > 0 ? 6 : -6,
+                opacity: 0,
+                filter: "brightness(1.4) drop-shadow(0 0 15px rgba(245, 158, 11, 0.8))"
+            });
+
+            // ⭐ 采用单调平滑推进，杜绝 scale 超出 1.0 的弹动
+            const tl = gsap.timeline({
+                onComplete: () => {
+                    isPlaneTransitioning = false;
+                    resizeCanvases();
+                }
+            });
+
+            // 阶段 1：自纸面浮起
+            tl.to(plane2DContainer, {
+                y: deltaY - 65,
+                scale: 0.32,
+                rotationX: 18,
+                rotationY: deltaX > 0 ? -9 : 9,
+                rotationZ: deltaX > 0 ? 3 : -3,
+                opacity: 0.92,
+                duration: 0.28,
+                ease: "power1.out"
+            })
+            // 阶段 2：从小到大向前推进并精确停在 1.0，完全平滑
+            .to(plane2DContainer, {
+                x: 0,
+                y: 0,
+                scale: 1.0,
+                rotationX: 0,
+                rotationY: 0,
+                rotationZ: 0,
+                opacity: 1,
+                filter: "brightness(1) drop-shadow(0 30px 80px rgba(15, 10, 5, 0.55))",
+                duration: 0.45,
+                ease: "power2.out" // 严格单调无超调曲线
+            });
+        }
+
+        function closePlane() {
+            if (isPlaneTransitioning || !isPlaneActive) return;
+            if (isGraphFullscreen) toggleGraphFullscreen();
+
+            isPlaneTransitioning = true;
+            isAutoPlaying = false;
+
+            tracePoints = [];
+            const rect = canvasInteractiveArea.getBoundingClientRect();
+            graphDrawCtx.clearRect(0, 0, rect.width, rect.height);
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const deltaX = lastOriginScreenX - centerX;
+            const deltaY = lastOriginScreenY - centerY;
+
+            const tlClose = gsap.timeline({
+                onComplete: () => {
+                    modalWrapper.style.display = 'none';
+                    isPlaneActive = false;
+                    currentActivePlaneKey = null;
+                    isPlaneTransitioning = false;
+                    controlsEnabled = true;
+                    triggerBookSpawnEffect(lastOriginScreenX, lastOriginScreenY);
+                }
+            });
+
+            tlClose.to(plane2DContainer, {
+                x: deltaX,
+                y: deltaY - 65,
+                scale: 0.28,
+                rotationX: 20,
+                rotationY: deltaX > 0 ? -10 : 10,
+                rotationZ: deltaX > 0 ? 4 : -4,
+                filter: "brightness(1.3) drop-shadow(0 15px 30px rgba(245, 158, 11, 0.6))",
+                duration: 0.3,
+                ease: "power2.in"
+            })
+            .to(plane2DContainer, {
+                y: deltaY,
+                scale: 0.1,
+                rotationX: 38,
+                rotationY: deltaX > 0 ? -18 : 18,
+                opacity: 0,
+                filter: "brightness(1.5) drop-shadow(0 0 10px rgba(245, 158, 11, 0.8))",
+                duration: 0.22,
+                ease: "power2.out"
+            });
+
+            gsap.to(modalWrapper, {
+                opacity: 0,
+                duration: 0.52,
+                ease: "power2.in"
+            });
+        }
+        btnPlaneClose.onclick = closePlane;
+        modalWrapper.onclick = (e) => {
+            if (e.target === modalWrapper && !isGraphFullscreen) closePlane();
+        };
+
+        /* ---------------- 全屏 FLIP 动效 ---------------- */
+        function toggleGraphFullscreen() {
+            if (isFullscreenAnimating) return;
+            isFullscreenAnimating = true;
+
+            const headerHeight = 52;
+
+            if (!isGraphFullscreen) {
+                const startRect = p2dCanvasBox.getBoundingClientRect();
+                fsPlaceholder = document.createElement('div');
+                fsPlaceholder.style.flex = "2.6";
+                fsPlaceholder.style.visibility = "hidden";
+                plane2dBody.insertBefore(fsPlaceholder, p2dCanvasBox);
+
+                p2dCanvasBox.style.position = 'fixed';
+                p2dCanvasBox.style.zIndex = '120';
+                p2dCanvasBox.style.top = startRect.top + 'px';
+                p2dCanvasBox.style.left = startRect.left + 'px';
+                p2dCanvasBox.style.width = startRect.width + 'px';
+                p2dCanvasBox.style.height = startRect.height + 'px';
+                p2dCanvasBox.style.borderRadius = '14px';
+
+                btnFsIcon.innerText = "🗗";
+                btnFsText.innerText = "退出全屏";
+                btnGraphFullscreen.classList.add('is-active');
+                plane2dHeader.classList.add('fs-header-active');
+
+                gsap.to(p2dCanvasBox, {
+                    top: headerHeight,
+                    left: 0,
+                    width: window.innerWidth,
+                    height: window.innerHeight - headerHeight,
+                    borderRadius: 0,
+                    duration: 0.44,
+                    ease: "power2.inOut",
+                    onUpdate: () => { resizeCanvases(); update2DCanvas(); },
+                    onComplete: () => {
+                        isGraphFullscreen = true;
+                        isFullscreenAnimating = false;
+                        resizeCanvases(); update2DCanvas();
+                    }
+                });
+            } else {
+                const targetRect = fsPlaceholder ? fsPlaceholder.getBoundingClientRect() : {
+                    top: window.innerHeight * 0.1, left: window.innerWidth * 0.05,
+                    width: window.innerWidth * 0.65, height: window.innerHeight * 0.75
+                };
+
+                btnFsIcon.innerText = "⛶";
+                btnFsText.innerText = "全屏";
+                btnGraphFullscreen.classList.remove('is-active');
+                plane2dHeader.classList.remove('fs-header-active');
+
+                gsap.to(p2dCanvasBox, {
+                    top: targetRect.top,
+                    left: targetRect.left,
+                    width: targetRect.width,
+                    height: targetRect.height,
+                    borderRadius: 14,
+                    duration: 0.38,
+                    ease: "power2.inOut",
+                    onUpdate: () => { resizeCanvases(); update2DCanvas(); },
+                    onComplete: () => {
+                        p2dCanvasBox.style.position = '';
+                        p2dCanvasBox.style.zIndex = '';
+                        p2dCanvasBox.style.top = '';
+                        p2dCanvasBox.style.left = '';
+                        p2dCanvasBox.style.width = '';
+                        p2dCanvasBox.style.height = '';
+                        p2dCanvasBox.style.borderRadius = '14px';
+
+                        if (fsPlaceholder && fsPlaceholder.parentNode) {
+                            fsPlaceholder.parentNode.removeChild(fsPlaceholder);
+                            fsPlaceholder = null;
+                        }
+                        isGraphFullscreen = false;
+                        isFullscreenAnimating = false;
+                        resizeCanvases(); update2DCanvas();
+                    }
+                });
+            }
+        }
+        btnGraphFullscreen.onclick = toggleGraphFullscreen;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isGraphFullscreen) toggleGraphFullscreen();
+        });
+
+        /* ========================================================
+           6. 动点往返摆动、双曲线分支切换与控制
+           ======================================================== */
+        const btnAutoPlay = document.getElementById('btn-auto-play');
+        const btnToggleTrace = document.getElementById('btn-toggle-trace');
+        const btnToggleCurve = document.getElementById('btn-toggle-curve');
+        const btnSwitchBranch = document.getElementById('btn-switch-branch');
+        const btnClearTrace = document.getElementById('btn-clear-trace');
+
+        function updatePlayBtnUI() {
+            if (isAutoPlaying) {
+                btnAutoPlay.innerText = "⏸ 暂停运动";
+                btnAutoPlay.classList.add('active');
+            } else {
+                btnAutoPlay.innerText = "▶ 自动运动";
+                btnAutoPlay.classList.remove('active');
+            }
+        }
+
+        btnAutoPlay.onclick = () => {
+            isAutoPlaying = !isAutoPlaying;
+            updatePlayBtnUI();
+        };
+
+        btnToggleTrace.onclick = () => {
+            isTraceEnabled = !isTraceEnabled;
+            if (isTraceEnabled) {
+                btnToggleTrace.innerText = "🪄 轨迹: 开";
+                btnToggleTrace.classList.add('active');
+            } else {
+                btnToggleTrace.innerText = "🪄 轨迹: 关";
+                btnToggleTrace.classList.remove('active');
+            }
+        };
+
+        btnToggleCurve.onclick = () => {
+            showBaseCurve = !showBaseCurve;
+            if (showBaseCurve) btnToggleCurve.classList.add('active');
+            else btnToggleCurve.classList.remove('active');
+        };
+
+        btnSwitchBranch.onclick = () => {
+            dynamicHyperBranch = dynamicHyperBranch === 1 ? -1 : 1;
+            btnSwitchBranch.innerText = dynamicHyperBranch === 1 ? "⇄ 切到左支" : "⇄ 切到右支";
+            tracePoints = [];
+            update2DCanvas();
+        };
+
+        btnClearTrace.onclick = () => {
+            tracePoints = [];
+        };
+
+        function advanceAutoMotion() {
+            if (!isAutoPlaying || !isPlaneActive) return;
+
+            if (currentActivePlaneKey && currentActivePlaneKey.startsWith('el-')) {
+                dynamicTheta += 0.022;
+                if (dynamicTheta > Math.PI * 2) dynamicTheta -= Math.PI * 2;
+            } else if (currentActivePlaneKey && currentActivePlaneKey.startsWith('hyp-')) {
+                dynamicHyperbolaT += 0.025 * hyperbolaSpeedDir;
+                if (dynamicHyperbolaT > 1.85) {
+                    dynamicHyperbolaT = 1.85;
+                    hyperbolaSpeedDir = -1;
+                } else if (dynamicHyperbolaT < -1.85) {
+                    dynamicHyperbolaT = -1.85;
+                    hyperbolaSpeedDir = 1;
+                }
+            } else {
+                dynamicParabolaT += 0.07 * parabolaSpeedDir;
+                if (dynamicParabolaT > 4.5) {
+                    dynamicParabolaT = 4.5;
+                    parabolaSpeedDir = -1;
+                } else if (dynamicParabolaT < -4.5) {
+                    dynamicParabolaT = -4.5;
+                    parabolaSpeedDir = 1;
+                }
+            }
+        }
+
+        /* ========================================================
+           7. 理论推导面板内容渲染
+           ======================================================== */
+        function renderPlaneInfo(key) {
+            let title = "", tag = "", html = "";
+
+            if (key.startsWith('hyp-')) {
+                btnSwitchBranch.style.display = 'block';
+                btnSwitchBranch.innerText = dynamicHyperBranch === 1 ? "⇄ 切到左支" : "⇄ 切到右支";
+            } else {
+                btnSwitchBranch.style.display = 'none';
+            }
+
+            if (key === 'el-def') {
+                title = "❶ 椭圆的第二定义 · 焦准距比";
+                tag = "统一定义 (0 < e < 1)";
+                html = `
+                    <h3>【核心定义】到焦点与准线的距离比为 e</h3>
+                    <div>平面内到定点 $F$ 与到定准线 $l$ 的距离比是常数 $e$ ($0 < e < 1$)。</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节离心率 $e$:</span>
+                            <span id="label-e-val">${paramEllipseE.toFixed(2)}</span>
+                        </div>
+                        <input type="range" id="slider-e" min="0.25" max="0.88" step="0.01" value="${paramEllipseE}">
+                    </div>
+                    <div class="formula-highlight">
+                        $$\\frac{|PF|}{|PM|} = e = \\frac{c}{a} \\quad (0 < e < 1)$$
+                    </div>
+                    <div>在左侧点击<b>【▶ 自动运动】</b>并开启<b>【🪄 轨迹: 开】</b>，动点 $P$ 亲手绘制完整椭圆！</div>
+                `;
+            } else if (key === 'el-graph') {
+                title = "❷ 椭圆图形分布 · 焦点与准线";
+                tag = "几何特征";
+                html = `
+                    <h3>【几何特征】准线位置与离心率</h3>
+                    <div>右焦点 $F(c,0)$，对应右准线方程为 $x = \\frac{a^2}{c} = \\frac{a}{e}$。</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节离心率 $e$:</span>
+                            <span id="label-e-val">${paramEllipseE.toFixed(2)}</span>
+                        </div>
+                        <input type="range" id="slider-e" min="0.25" max="0.88" step="0.01" value="${paramEllipseE}">
+                    </div>
+                    <div class="formula-highlight">
+                        $$c = ae, \\quad \\text{准线: } x = \\pm \\frac{a}{e}$$
+                    </div>
+                `;
+            } else if (key === 'el-eq') {
+                title = "❸ 椭圆标准方程的代数推导";
+                tag = "代数推导";
+                html = `
+                    <h3>【推导过程】</h3>
+                    <div>动点 $P(x,y)$，焦点 $F(c,0)$，准线 $l: x = \\frac{a^2}{c}$：</div>
+                    <div class="formula-highlight">
+                        $$\\frac{\\sqrt{(x-c)^2 + y^2}}{|x - \\frac{a^2}{c}|} = \\frac{c}{a}$$
+                    </div>
+                    <div>两边平方展开并代入 $b^2 = a^2 - c^2$，整理即得：</div>
+                    <div class="formula-highlight">
+                        $$\\frac{x^2}{a^2} + \\frac{y^2}{b^2} = 1 \\quad (a > b > 0)$$
+                    </div>
+                `;
+            } else if (key === 'el-verify') {
+                title = "❹ 椭圆特殊点验证 · 顶点极限";
+                tag = "端点验证";
+                html = `
+                    <h3>【长轴端点代数检验】</h3>
+                    <div>当动点移动到长轴右端点 $A(a,0)$：<br>
+                    • 焦半径：$|PF| = a - c$<br>
+                    • 准线距：$|PM| = \\frac{a}{e} - a = \\frac{a - c}{e}$<br>
+                    • 距离比：
+                    <div class="formula-highlight">
+                        $$\\frac{|PF|}{|PM|} = \\frac{a - c}{\\frac{a - c}{e}} = e \\quad \\text{(恒成立)}$$
+                    </div>
+                `;
+            } else if (key === 'hyp-def1') {
+                title = "❶ 双曲线第一定义：距离差";
+                tag = "定差为 2a";
+                html = `
+                    <h3>【核心定义】到两焦点距离之差的绝对值为定值</h3>
+                    <div>平面内与两个定点 $F_1, F_2$ 的距离的差的绝对值等于常数 $2a$ ($0 < 2a < 2c$)：</div>
+                    <div class="formula-highlight">
+                        $$|\\,|PF_1| - |PF_2|\\,| = 2a$$
+                    </div>
+                    <div>• 右支：$|PF_1| - |PF_2| = 2a$<br>
+                    • 左支：$|PF_2| - |PF_1| = 2a$</div>
+                    <div class="formula-highlight">
+                        $$c^2 = a^2 + b^2, \\quad e = \\frac{c}{a} > 1$$
+                    </div>
+                    <div>点击左侧<b>【⇄ 切换左支】</b>，观察动点在左右两支绘制双曲线！</div>
+                `;
+            } else if (key === 'hyp-def2') {
+                title = "❷ 双曲线第二定义：焦准距比";
+                tag = "统一定义 (e > 1)";
+                html = `
+                    <h3>【核心定义】到焦点与准线的距离比为 e > 1</h3>
+                    <div>平面内到定点 $F$ 与到定准线 $l$ 的距离比是常数 $e$ ($e > 1$)：</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节离心率 $e$:</span>
+                            <span id="label-h-e-val">${paramHyperbolaE.toFixed(2)}</span>
+                        </div>
+                        <input type="range" id="slider-he" min="1.15" max="2.6" step="0.05" value="${paramHyperbolaE}">
+                    </div>
+                    <div class="formula-highlight">
+                        $$\\frac{|PF_1|}{|PH_1|} = \\frac{|PF_2|}{|PH_2|} = e = \\frac{c}{a} > 1$$
+                    </div>
+                    <div>焦点与同侧准线严格对应！可在左侧自由切换左/右支！</div>
+                `;
+            } else if (key === 'pa-def') {
+                title = "一、抛物线的定义";
+                tag = "等距性 (e = 1)";
+                html = `
+                    <h3>【核心定义】焦点与准线等距</h3>
+                    <div>平面内到定点 $F$ 和定直线 $l$ 距离相等的点的轨迹。</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节焦准距 $p$:</span>
+                            <span id="label-p-val">${paramParabolaP.toFixed(1)}</span>
+                        </div>
+                        <input type="range" id="slider-p" min="1.2" max="4.5" step="0.1" value="${paramParabolaP}">
+                    </div>
+                    <div class="formula-highlight">
+                        $$|PF| = |PM| \\iff \\frac{|PF|}{|PM|} = 1$$
+                    </div>
+                `;
+            } else {
+                const mapTitles = {
+                    'pa-right': '二、抛物线：y² = 2px (向右开口)',
+                    'pa-left':  '二、抛物线：y² = -2px (向左开口)',
+                    'pa-up':    '二、抛物线：x² = 2py (向上开口)',
+                    'pa-down':  '二、抛物线：x² = -2py (向下开口)'
+                };
+                const mapProps = {
+                    'pa-right': { f: '(\\frac{p}{2}, 0)', l: 'x = -\\frac{p}{2}', form: 'y^2 = 2px' },
+                    'pa-left':  { f: '(-\\frac{p}{2}, 0)', l: 'x = \\frac{p}{2}', form: 'y^2 = -2px' },
+                    'pa-up':    { f: '(0, \\frac{p}{2})', l: 'y = -\\frac{p}{2}', form: 'x^2 = 2py' },
+                    'pa-down':  { f: '(0, -\\frac{p}{2})', l: 'y = \\frac{p}{2}', form: 'x^2 = -2py' }
+                };
+                const prop = mapProps[key] || mapProps['pa-right'];
+                title = mapTitles[key];
+                tag = "标准方程与性质";
+                html = `
+                    <h3>【几何性质】焦点与准线</h3>
+                    <div>方程：$${prop.form} \\quad (p > 0)$<br>
+                    • 焦点坐标：$F${prop.f}$<br>
+                    • 准线方程：$${prop.l}$<br>
+                    • 焦准距：$p$</div>
+                    <div class="slider-control-group">
+                        <div class="slider-row">
+                            <span>调节参数 $p$:</span>
+                            <span id="label-p-val">${paramParabolaP.toFixed(1)}</span>
+                        </div>
+                        <input type="range" id="slider-p" min="1.2" max="4.5" step="0.1" value="${paramParabolaP}">
+                    </div>
+                    <div class="formula-highlight">
+                        $$|PF| \\equiv |PM|$$
+                    </div>
+                    <div>拖动或自动运动动点 $P$，实时验证焦半径等于准线距！</div>
+                `;
+            }
+
+            p2dTitleText.innerText = title;
+            p2dTagText.innerText = tag;
+            p2dInfoContent.innerHTML = html;
+
+            if (window.renderMathInElement) {
+                renderMathInElement(p2dInfoContent, { delimiters: [{left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}], throwOnError:false });
+            }
+
+            const sE = document.getElementById('slider-e');
+            if (sE) sE.oninput = (e) => {
+                paramEllipseE = parseFloat(e.target.value);
+                const lbl = document.getElementById('label-e-val');
+                if (lbl) lbl.innerText = paramEllipseE.toFixed(2);
+                tracePoints = [];
+            };
+
+            const sHE = document.getElementById('slider-he');
+            if (sHE) sHE.oninput = (e) => {
+                paramHyperbolaE = parseFloat(e.target.value);
+                const lbl = document.getElementById('label-h-e-val');
+                if (lbl) lbl.innerText = paramHyperbolaE.toFixed(2);
+                tracePoints = [];
+            };
+
+            const sP = document.getElementById('slider-p');
+            if (sP) sP.oninput = (e) => {
+                paramParabolaP = parseFloat(e.target.value);
+                const lbl = document.getElementById('label-p-val');
+                if (lbl) lbl.innerText = paramParabolaP.toFixed(1);
+                tracePoints = [];
+            };
+        }
+
+        /* ========================================================
+           8. 底层几何画板动态渲染 (大视界坐标系)
+           ======================================================== */
+        function drawCanvasLine(ctx, x1, y1, x2, y2, isDash = false, color = "#261d15", width = 2) {
+            ctx.save(); ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = width;
+            ctx.lineCap = "round"; ctx.lineJoin = "round";
+            if (isDash) ctx.setLineDash([7, 5]);
+            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+        }
+
+        function drawCanvasText(ctx, text, x, y, color = "#261d15", font = "bold 15px 'KaiTi'") {
+            ctx.save(); ctx.font = font; ctx.fillStyle = color; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(text, x, y); ctx.restore();
+        }
+
+        function update2DCanvas() {
+            if (!isPlaneActive) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+            const w = p2dCanvas.width / dpr;
+            const h = p2dCanvas.height / dpr;
+
+            p2dCtx.clearRect(0, 0, w, h);
+
+            p2dCtx.save();
+            p2dCtx.strokeStyle = "#f3f4f6";
+            p2dCtx.lineWidth = 1;
+            for (let x = 0; x < w; x += 32) { p2dCtx.beginPath(); p2dCtx.moveTo(x, 0); p2dCtx.lineTo(x, h); p2dCtx.stroke(); }
+            for (let y = 0; y < h; y += 32) { p2dCtx.beginPath(); p2dCtx.moveTo(0, y); p2dCtx.lineTo(w, y); p2dCtx.stroke(); }
+            p2dCtx.restore();
+
+            const cx = w * 0.48, cy = h * 0.5;
+
+            p2dCtx.strokeStyle = "#94a3b8"; p2dCtx.lineWidth = 1.6;
+            drawCanvasLine(p2dCtx, 20, cy, w - 20, cy);
+            drawCanvasLine(p2dCtx, cx, 20, cx, h - 20);
+            drawCanvasText(p2dCtx, "O", cx - 14, cy + 15, "#64748b", "bold 15px 'KaiTi'");
+            drawCanvasText(p2dCtx, "x", w - 14, cy + 15, "#64748b", "bold 15px sans-serif");
+            drawCanvasText(p2dCtx, "y", cx + 15, 16, "#64748b", "bold 15px sans-serif");
+
+            if (tracePoints.length > 1) {
+                p2dCtx.save();
+                p2dCtx.strokeStyle = "rgba(180, 61, 14, 0.82)";
+                p2dCtx.lineWidth = 3.5;
+                p2dCtx.lineCap = 'round';
+                p2dCtx.lineJoin = 'round';
+                p2dCtx.beginPath();
+                for (let i = 0; i < tracePoints.length; i++) {
+                    if (i === 0) {
+                        p2dCtx.moveTo(tracePoints[i].x, tracePoints[i].y);
+                    } else {
+                        const dist = Math.hypot(tracePoints[i].x - tracePoints[i-1].x, tracePoints[i].y - tracePoints[i-1].y);
+                        if (dist > 38) {
+                            p2dCtx.moveTo(tracePoints[i].x, tracePoints[i].y);
+                        } else {
+                            p2dCtx.lineTo(tracePoints[i].x, tracePoints[i].y);
+                        }
+                    }
+                }
+                p2dCtx.stroke();
+                p2dCtx.restore();
+            }
+
+            // ==================== 1. 椭圆体系 ====================
+            if (currentActivePlaneKey && currentActivePlaneKey.startsWith('el-')) {
+                const mathA = 5.6; 
+                const mathE = paramEllipseE;
+                const mathC = mathA * mathE;
+                const mathB = Math.sqrt(mathA * mathA - mathC * mathC);
+                const mathDirX = mathA / mathE;
+
+                const aPx = mathA * MATH_SCALE;
+                const bPx = mathB * MATH_SCALE;
+                const cPx = mathC * MATH_SCALE;
+                const dirXPx = mathDirX * MATH_SCALE;
+
+                if (showBaseCurve) {
+                    p2dCtx.save();
+                    p2dCtx.beginPath();
+                    p2dCtx.strokeStyle = "#0284c7";
+                    p2dCtx.lineWidth = 3.2;
+                    p2dCtx.ellipse(cx, cy, aPx, bPx, 0, 0, Math.PI * 2);
+                    p2dCtx.stroke();
+                    p2dCtx.restore();
+                }
+
+                drawCanvasLine(p2dCtx, cx + dirXPx, 25, cx + dirXPx, h - 25, true, "#d97706", 2.2);
+                drawCanvasText(p2dCtx, `准线 x = a²/c`, cx + dirXPx, 16, "#d97706", "bold 14px 'KaiTi'");
+
+                p2dCtx.fillStyle = "#dc2626";
+                p2dCtx.beginPath(); p2dCtx.arc(cx + cPx, cy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "F(c,0)", cx + cPx, cy + 18, "#dc2626", "bold 15px 'KaiTi'");
+
+                const px = cx + aPx * Math.cos(dynamicTheta);
+                const py = cy - bPx * Math.sin(dynamicTheta);
+                const mx = cx + dirXPx;
+                const my = py;
+
+                if (isTraceEnabled) {
+                    tracePoints.push({ x: px, y: py });
+                    if (tracePoints.length > 500) tracePoints.shift();
+                }
+
+                drawCanvasLine(p2dCtx, px, py, cx + cPx, cy, false, "#dc2626", 2.6);
+                drawCanvasLine(p2dCtx, px, py, mx, my, true, "#059669", 2.6);
+
+                p2dCtx.fillStyle = "#059669";
+                p2dCtx.beginPath(); p2dCtx.arc(mx, my, 4.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "M", mx + 14, my, "#059669", "bold 15px 'KaiTi'");
+
+                p2dCtx.fillStyle = "#2563eb";
+                p2dCtx.beginPath(); p2dCtx.arc(px, py, 8, 0, Math.PI * 2); p2dCtx.fill();
+                p2dCtx.strokeStyle = "#ffffff"; p2dCtx.lineWidth = 2.5; p2dCtx.stroke();
+                drawCanvasText(p2dCtx, "P", px, py - 18, "#1e3a8a", "bold 15px 'KaiTi'");
+
+                const realDistPF = Math.hypot(px - (cx + cPx), py - cy) / MATH_SCALE;
+                const realDistPM = Math.abs(mx - px) / MATH_SCALE;
+                const realRatio = realDistPF / realDistPM;
+
+                p2dCtx.fillStyle = "rgba(255,255,255,0.94)";
+                p2dCtx.fillRect(25, 25, 210, 75);
+                p2dCtx.strokeStyle = "#cbd5e1"; p2dCtx.strokeRect(25, 25, 210, 75);
+                drawCanvasText(p2dCtx, `焦半径 |PF| = ${realDistPF.toFixed(2)}`, 130, 42, "#dc2626", "bold 14px monospace");
+                drawCanvasText(p2dCtx, `准线距 |PM| = ${realDistPM.toFixed(2)}`, 130, 62, "#059669", "bold 14px monospace");
+                drawCanvasText(p2dCtx, `比值 e ≡ ${(realRatio).toFixed(2)}`, 130, 82, "#0284c7", "bold 15px monospace");
+
+            // ==================== 2. 双曲线体系 ====================
+            } else if (currentActivePlaneKey && currentActivePlaneKey.startsWith('hyp-')) {
+                const mathA = 3.5;
+                const mathE = paramHyperbolaE;
+                const mathC = mathA * mathE;
+                const mathB = Math.sqrt(mathC * mathC - mathA * mathA);
+                const mathDirX = mathA / mathE;
+
+                const aPx = mathA * MATH_SCALE;
+                const bPx = mathB * MATH_SCALE;
+                const cPx = mathC * MATH_SCALE;
+                const dirXPx = mathDirX * MATH_SCALE;
+
+                if (showBaseCurve) {
+                    p2dCtx.save();
+                    p2dCtx.strokeStyle = "#cbd5e1"; p2dCtx.lineWidth = 1.5; p2dCtx.setLineDash([5, 5]);
+                    const k = bPx / aPx;
+                    p2dCtx.beginPath();
+                    p2dCtx.moveTo(cx - 300, cy - 300 * k); p2dCtx.lineTo(cx + 300, cy + 300 * k);
+                    p2dCtx.moveTo(cx - 300, cy + 300 * k); p2dCtx.lineTo(cx + 300, cy - 300 * k);
+                    p2dCtx.stroke();
+                    p2dCtx.restore();
+
+                    p2dCtx.save();
+                    p2dCtx.strokeStyle = "#0284c7";
+                    p2dCtx.lineWidth = 3.2;
+                    p2dCtx.beginPath();
+                    for (let t = -2.2; t <= 2.2; t += 0.05) {
+                        const rx = cx + aPx * Math.cosh(t);
+                        const ry = cy - bPx * Math.sinh(t);
+                        if (t === -2.2) p2dCtx.moveTo(rx, ry); else p2dCtx.lineTo(rx, ry);
+                    }
+                    p2dCtx.stroke();
+                    p2dCtx.beginPath();
+                    for (let t = -2.2; t <= 2.2; t += 0.05) {
+                        const lx = cx - aPx * Math.cosh(t);
+                        const ly = cy - bPx * Math.sinh(t);
+                        if (t === -2.2) p2dCtx.moveTo(lx, ly); else p2dCtx.lineTo(lx, ly);
+                    }
+                    p2dCtx.stroke();
+                    p2dCtx.restore();
+                }
+
+                p2dCtx.fillStyle = "#dc2626";
+                p2dCtx.beginPath(); p2dCtx.arc(cx - cPx, cy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
+                p2dCtx.beginPath(); p2dCtx.arc(cx + cPx, cy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "F₁", cx - cPx, cy + 18, "#dc2626", "bold 15px 'KaiTi'");
+                drawCanvasText(p2dCtx, "F₂", cx + cPx, cy + 18, "#dc2626", "bold 15px 'KaiTi'");
+
+                const px = cx + dynamicHyperBranch * aPx * Math.cosh(dynamicHyperbolaT);
+                const py = cy - bPx * Math.sinh(dynamicHyperbolaT);
+
+                if (isTraceEnabled) {
+                    tracePoints.push({ x: px, y: py });
+                    if (tracePoints.length > 500) tracePoints.shift();
+                }
+
+                p2dCtx.fillStyle = "#2563eb";
+                p2dCtx.beginPath(); p2dCtx.arc(px, py, 8, 0, Math.PI * 2); p2dCtx.fill();
+                p2dCtx.strokeStyle = "#ffffff"; p2dCtx.lineWidth = 2.5; p2dCtx.stroke();
+                drawCanvasText(p2dCtx, "P", px + (dynamicHyperBranch > 0 ? 16 : -16), py - 14, "#1e3a8a", "bold 15px 'KaiTi'");
+
+                if (currentActivePlaneKey === 'hyp-def1') {
+                    drawCanvasLine(p2dCtx, px, py, cx - cPx, cy, false, "#e11d48", 2.6);
+                    drawCanvasLine(p2dCtx, px, py, cx + cPx, cy, false, "#eab308", 2.6);
+
+                    const d1 = Math.hypot(px - (cx - cPx), py - cy) / MATH_SCALE;
+                    const d2 = Math.hypot(px - (cx + cPx), py - cy) / MATH_SCALE;
+                    const diff = Math.abs(d1 - d2);
+
+                    p2dCtx.fillStyle = "rgba(255,255,255,0.94)";
+                    p2dCtx.fillRect(25, 25, 230, 75);
+                    p2dCtx.strokeStyle = "#cbd5e1"; p2dCtx.strokeRect(25, 25, 230, 75);
+                    drawCanvasText(p2dCtx, `|PF₁| = ${d1.toFixed(2)}`, 140, 42, "#e11d48", "bold 14px monospace");
+                    drawCanvasText(p2dCtx, `|PF₂| = ${d2.toFixed(2)}`, 140, 62, "#d97706", "bold 14px monospace");
+                    drawCanvasText(p2dCtx, `距离差 ||PF₁|-|PF₂|| ≡ ${diff.toFixed(2)} (2a)`, 140, 82, "#0284c7", "bold 13px monospace");
+                } else {
+                    drawCanvasLine(p2dCtx, cx - dirXPx, 25, cx - dirXPx, h - 25, true, "#d97706", 2.0);
+                    drawCanvasLine(p2dCtx, cx + dirXPx, 25, cx + dirXPx, h - 25, true, "#d97706", 2.0);
+                    drawCanvasText(p2dCtx, "x=-a²/c", cx - dirXPx, 16, "#d97706", "bold 13px 'KaiTi'");
+                    drawCanvasText(p2dCtx, "x=a²/c", cx + dirXPx, 16, "#d97706", "bold 13px 'KaiTi'");
+
+                    const activeFocusX = dynamicHyperBranch > 0 ? cx + cPx : cx - cPx;
+                    const activeDirX = dynamicHyperBranch > 0 ? cx + dirXPx : cx - dirXPx;
+
+                    drawCanvasLine(p2dCtx, px, py, activeFocusX, cy, false, "#dc2626", 2.6);
+                    drawCanvasLine(p2dCtx, px, py, activeDirX, py, true, "#059669", 2.6);
+
+                    p2dCtx.fillStyle = "#059669";
+                    p2dCtx.beginPath(); p2dCtx.arc(activeDirX, py, 4.5, 0, Math.PI * 2); p2dCtx.fill();
+                    drawCanvasText(p2dCtx, "H", activeDirX + (dynamicHyperBranch > 0 ? -14 : 14), py - 10, "#059669", "bold 15px 'KaiTi'");
+
+                    const realPF = Math.hypot(px - activeFocusX, py - cy) / MATH_SCALE;
+                    const realPH = Math.abs(activeDirX - px) / MATH_SCALE;
+                    const ratio = realPF / realPH;
+
+                    p2dCtx.fillStyle = "rgba(255,255,255,0.94)";
+                    p2dCtx.fillRect(25, 25, 220, 75);
+                    p2dCtx.strokeStyle = "#cbd5e1"; p2dCtx.strokeRect(25, 25, 220, 75);
+                    drawCanvasText(p2dCtx, `焦半径 |PF| = ${realPF.toFixed(2)}`, 135, 42, "#dc2626", "bold 14px monospace");
+                    drawCanvasText(p2dCtx, `准线距 |PH| = ${realPH.toFixed(2)}`, 135, 62, "#059669", "bold 14px monospace");
+                    drawCanvasText(p2dCtx, `比值 e ≡ ${(ratio).toFixed(2)} (>1)`, 135, 82, "#0284c7", "bold 14px monospace");
+                }
+
+            // ==================== 3. 抛物线体系 ====================
+            } else {
+                const mathP = paramParabolaP;
+                const pPx = mathP * MATH_SCALE;
+                let dir = 'right';
+                if (currentActivePlaneKey === 'pa-left') dir = 'left';
+                else if (currentActivePlaneKey === 'pa-up') dir = 'up';
+                else if (currentActivePlaneKey === 'pa-down') dir = 'down';
+
+                if (showBaseCurve) {
+                    p2dCtx.save();
+                    p2dCtx.strokeStyle = "#0284c7";
+                    p2dCtx.lineWidth = 3.2;
+                    p2dCtx.beginPath();
+                    const span = 5.2;
+                    for (let t = -span; t <= span; t += 0.1) {
+                        let rx = 0, ry = 0;
+                        if (dir === 'right') { rx = cx + ((t*t)/(2*mathP)) * MATH_SCALE; ry = cy + t * MATH_SCALE; }
+                        else if (dir === 'left') { rx = cx - ((t*t)/(2*mathP)) * MATH_SCALE; ry = cy + t * MATH_SCALE; }
+                        else if (dir === 'up') { rx = cx + t * MATH_SCALE; ry = cy - ((t*t)/(2*mathP)) * MATH_SCALE; }
+                        else { rx = cx + t * MATH_SCALE; ry = cy + ((t*t)/(2*mathP)) * MATH_SCALE; }
+                        if (t === -span) p2dCtx.moveTo(rx, ry); else p2dCtx.lineTo(rx, ry);
+                    }
+                    p2dCtx.stroke();
+                    p2dCtx.restore();
+                }
+
+                let fx = cx, fy = cy, lx1 = 0, ly1 = 0, lx2 = 0, ly2 = 0;
+                if (dir === 'right') {
+                    fx = cx + pPx/2; fy = cy;
+                    lx1 = cx - pPx/2; ly1 = 25; lx2 = cx - pPx/2; ly2 = h - 25;
+                } else if (dir === 'left') {
+                    fx = cx - pPx/2; fy = cy;
+                    lx1 = cx + pPx/2; ly1 = 25; lx2 = cx + pPx/2; ly2 = h - 25;
+                } else if (dir === 'up') {
+                    fx = cx; fy = cy - pPx/2;
+                    lx1 = 25; ly1 = cy + pPx/2; lx2 = w - 25; ly2 = cy + pPx/2;
+                } else {
+                    fx = cx; fy = cy + pPx/2;
+                    lx1 = 25; ly1 = cy - pPx/2; lx2 = w - 25; ly2 = cy - pPx/2;
+                }
+
+                drawCanvasLine(p2dCtx, lx1, ly1, lx2, ly2, true, "#d97706", 2.2);
+                drawCanvasText(p2dCtx, "准线 l", dir === 'up' || dir === 'down' ? w - 25 : lx1, dir === 'up' || dir === 'down' ? ly1 - 14 : 16, "#d97706", "bold 14px 'KaiTi'");
+
+                p2dCtx.fillStyle = "#dc2626"; p2dCtx.beginPath(); p2dCtx.arc(fx, fy, 5.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "F", fx + 14, fy + 14, "#dc2626", "bold 15px 'KaiTi'");
+
+                const tVal = dynamicParabolaT;
+                let px = 0, py = 0, mx = 0, my = 0;
+                if (dir === 'right') {
+                    px = cx + ((tVal*tVal)/(2*mathP)) * MATH_SCALE; py = cy + tVal * MATH_SCALE;
+                    mx = cx - pPx/2; my = py;
+                } else if (dir === 'left') {
+                    px = cx - ((tVal*tVal)/(2*mathP)) * MATH_SCALE; py = cy + tVal * MATH_SCALE;
+                    mx = cx + pPx/2; my = py;
+                } else if (dir === 'up') {
+                    px = cx + tVal * MATH_SCALE; py = cy - ((tVal*tVal)/(2*mathP)) * MATH_SCALE;
+                    mx = px; my = cy + pPx/2;
+                } else {
+                    px = cx + tVal * MATH_SCALE; py = cy + ((tVal*tVal)/(2*mathP)) * MATH_SCALE;
+                    mx = px; my = cy - pPx/2;
+                }
+
+                if (isTraceEnabled) {
+                    tracePoints.push({ x: px, y: py });
+                    if (tracePoints.length > 500) tracePoints.shift();
+                }
+
+                drawCanvasLine(p2dCtx, px, py, fx, fy, false, "#dc2626", 2.6);
+                drawCanvasLine(p2dCtx, px, py, mx, my, true, "#059669", 2.6);
+
+                p2dCtx.fillStyle = "#059669"; p2dCtx.beginPath(); p2dCtx.arc(mx, my, 4.5, 0, Math.PI * 2); p2dCtx.fill();
+                drawCanvasText(p2dCtx, "M", mx + 14, my - 8, "#059669", "bold 14px 'KaiTi'");
+
+                p2dCtx.fillStyle = "#2563eb"; p2dCtx.beginPath(); p2dCtx.arc(px, py, 8, 0, Math.PI * 2); p2dCtx.fill();
+                p2dCtx.strokeStyle = "#ffffff"; p2dCtx.lineWidth = 2.5; p2dCtx.stroke();
+                drawCanvasText(p2dCtx, "P", px + 16, py - 16, "#1e3a8a", "bold 15px 'KaiTi'");
+
+                const realD1 = Math.hypot(px - fx, py - fy) / MATH_SCALE;
+                const realD2 = Math.hypot(px - mx, py - my) / MATH_SCALE;
+
+                p2dCtx.fillStyle = "rgba(255,255,255,0.94)"; p2dCtx.fillRect(25, 25, 210, 70);
+                p2dCtx.strokeStyle = "#cbd5e1"; p2dCtx.strokeRect(25, 25, 210, 70);
+                drawCanvasText(p2dCtx, `焦半径 |PF| = ${realD1.toFixed(2)}`, 130, 45, "#dc2626", "bold 14px monospace");
+                drawCanvasText(p2dCtx, `准线距 |PM| = ${realD2.toFixed(2)}`, 130, 68, "#059669", "bold 14px monospace");
+            }
+        }
+
+        /* ========================================================
+           9. 动点手动拖拽与图形标注涂鸦系统
+           ======================================================== */
+        let graphTool = 'drag';
+        let graphColor = '#dc2626';
+        let isGraphDrawing = false;
+        let graphStartX = 0, graphStartY = 0;
+        let graphSnapshot = null;
+
+        function getExactPos(canvas, e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function handlePointerTrack(e) {
+            const rect = canvasInteractiveArea.getBoundingClientRect();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+            const w = p2dCanvas.width / dpr;
+            const h = p2dCanvas.height / dpr;
+
+            const mouseCanvasX = (e.clientX - rect.left);
+            const mouseCanvasY = (e.clientY - rect.top);
+            const cx = w * 0.48;
+            const cy = h * 0.5;
+
+            const dx = mouseCanvasX - cx;
+            const dy = mouseCanvasY - cy;
+
+            if (currentActivePlaneKey && currentActivePlaneKey.startsWith('el-')) {
+                dynamicTheta = Math.atan2(-dy, dx);
+            } else if (currentActivePlaneKey && currentActivePlaneKey.startsWith('hyp-')) {
+                dynamicHyperBranch = dx >= 0 ? 1 : -1;
+                btnSwitchBranch.innerText = dynamicHyperBranch === 1 ? "⇄ 切到左支" : "⇄ 切到右支";
+                const mathY = -dy / MATH_SCALE;
+                dynamicHyperbolaT = Math.asinh(mathY / 3.0);
+            } else {
+                let dir = 'right';
+                if (currentActivePlaneKey === 'pa-left') dir = 'left';
+                else if (currentActivePlaneKey === 'pa-up') dir = 'up';
+                else if (currentActivePlaneKey === 'pa-down') dir = 'down';
+
+                if (dir === 'right' || dir === 'left') {
+                    dynamicParabolaT = Math.max(-4.5, Math.min(4.5, dy / MATH_SCALE));
+                } else {
+                    dynamicParabolaT = Math.max(-4.5, Math.min(4.5, dx / MATH_SCALE));
+                }
+            }
+        }
+
+        graphDrawCanvas.addEventListener('pointerdown', (e) => {
+            const pos = getExactPos(graphDrawCanvas, e);
+            if (graphTool === 'drag') {
+                isDraggingPoint = true;
+                try { graphDrawCanvas.setPointerCapture(e.pointerId); } catch(err){}
+                handlePointerTrack(e);
+            } else {
+                isGraphDrawing = true;
+                try { graphDrawCanvas.setPointerCapture(e.pointerId); } catch(err){}
+                graphStartX = pos.x;
+                graphStartY = pos.y;
+
+                if (graphTool === 'line') {
+                    graphSnapshot = graphDrawCtx.getImageData(0, 0, graphDrawCanvas.width, graphDrawCanvas.height);
+                } else if (graphTool === 'pen') {
+                    graphDrawCtx.beginPath();
+                    graphDrawCtx.moveTo(pos.x, pos.y);
+                }
+            }
+            e.preventDefault();
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isPlaneActive) return;
+
+            if (isDraggingPoint && graphTool === 'drag') {
+                handlePointerTrack(e);
+            } else if (isGraphDrawing && graphTool !== 'drag') {
+                const pos = getExactPos(graphDrawCanvas, e);
+
+                if (graphTool === 'pen') {
+                    graphDrawCtx.save();
+                    graphDrawCtx.strokeStyle = graphColor;
+                    graphDrawCtx.lineWidth = 2.6;
+                    graphDrawCtx.lineCap = 'round';
+                    graphDrawCtx.lineJoin = 'round';
+                    graphDrawCtx.lineTo(pos.x, pos.y);
+                    graphDrawCtx.stroke();
+                    graphDrawCtx.restore();
+                } else if (graphTool === 'eraser') {
+                    graphDrawCtx.save();
+                    graphDrawCtx.globalCompositeOperation = 'destination-out';
+                    graphDrawCtx.beginPath();
+                    graphDrawCtx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+                    graphDrawCtx.fill();
+                    graphDrawCtx.restore();
+                } else if (graphTool === 'line') {
+                    if (graphSnapshot) graphDrawCtx.putImageData(graphSnapshot, 0, 0);
+                    graphDrawCtx.save();
+                    graphDrawCtx.strokeStyle = graphColor;
+                    graphDrawCtx.lineWidth = 2.6;
+                    graphDrawCtx.lineCap = 'round';
+                    graphDrawCtx.beginPath();
+                    graphDrawCtx.moveTo(graphStartX, graphStartY);
+                    graphDrawCtx.lineTo(pos.x, pos.y);
+                    graphDrawCtx.stroke();
+                    graphDrawCtx.restore();
+                }
+            }
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            isDraggingPoint = false;
+            isGraphDrawing = false;
+            graphSnapshot = null;
+            try { graphDrawCanvas.releasePointerCapture(e.pointerId); } catch(err){}
+        });
+
+        const btnGDrag = document.getElementById('btn-graph-drag');
+        const btnGPen = document.getElementById('btn-graph-pen');
+        const btnGLine = document.getElementById('btn-graph-line');
+        const btnGEraser = document.getElementById('btn-graph-eraser');
+        const btnGClear = document.getElementById('btn-graph-clear');
+
+        function setGraphTool(tool, btn) {
+            graphTool = tool;
+            [btnGDrag, btnGPen, btnGLine, btnGEraser].forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (tool === 'drag') graphDrawCanvas.style.cursor = 'grab';
+            else graphDrawCanvas.style.cursor = 'crosshair';
+        }
+
+        btnGDrag.onclick = () => setGraphTool('drag', btnGDrag);
+        btnGPen.onclick = () => setGraphTool('pen', btnGPen);
+        btnGLine.onclick = () => setGraphTool('line', btnGLine);
+        btnGEraser.onclick = () => setGraphTool('eraser', btnGEraser);
+
+        btnGClear.onclick = () => {
+            const rect = canvasInteractiveArea.getBoundingClientRect();
+            graphDrawCtx.clearRect(0, 0, rect.width, rect.height);
+        };
+
+        document.querySelectorAll('.g-dot').forEach(dot => {
+            dot.onclick = () => {
+                document.querySelectorAll('.g-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                graphColor = dot.getAttribute('data-color');
+                if (graphTool === 'eraser' || graphTool === 'drag') setGraphTool('pen', btnGPen);
+            };
+        });
+
+        /* ========================================================
+           10. 知识点热区拾取
+           ======================================================== */
+        function handlePointerTap(clientX, clientY) {
+            if (isAnimating || isPlaneActive || isPlaneTransitioning) return;
+
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            if (!isBookOpen) {
+                const hits = raycaster.intersectObjects([bookCover, bookBase, coverPivot, ...bookGroup.children], true);
+                if (hits.length > 0) openBook();
+                return;
+            }
+
+            const hits = raycaster.intersectObjects([bookBase, bookCover], true);
+            if (hits.length > 0) {
+                const hitObj = hits[0].object;
+                const hitPoint = hits[0].point.clone();
+
+                let isLeftPage = false;
+                let curObj = hitObj;
+                while (curObj) {
+                    if (curObj === coverPivot || curObj === bookCover) {
+                        isLeftPage = true;
+                        break;
+                    }
+                    curObj = curObj.parent;
+                }
+                if (hitPoint.x < -3.5) isLeftPage = true;
+
+                // 左侧页：双曲线
+                if (isLeftPage) {
+                    const localPt = bookCover.worldToLocal(hitPoint.clone());
+                    if (localPt.z < 0) {
+                        riseUpPlaneCenter('hyp-def2', clientX, clientY);
+                    } else {
+                        riseUpPlaneCenter('hyp-def1', clientX, clientY);
+                    }
+                    return;
+                }
+
+                // 右侧页：椭圆与抛物线
+                const localPt = bookBase.worldToLocal(hitPoint.clone());
+                const x = localPt.x;
+                const z = localPt.z;
+
+                if (z < 0) {
+                    if (z < -2.4) {
+                        if (x < 0) riseUpPlaneCenter('el-def', clientX, clientY);
+                        else riseUpPlaneCenter('el-graph', clientX, clientY);
+                    } else {
+                        if (x < 0) riseUpPlaneCenter('el-eq', clientX, clientY);
+                        else riseUpPlaneCenter('el-verify', clientX, clientY);
+                    }
+                } 
+                else {
+                    if (z < 1.4) {
+                        riseUpPlaneCenter('pa-def', clientX, clientY);
+                    } else {
+                        if (x < -1.75) {
+                            riseUpPlaneCenter('pa-right', clientX, clientY);
+                        } else if (x < 0) {
+                            riseUpPlaneCenter('pa-left', clientX, clientY);
+                        } else if (x < 1.75) {
+                            riseUpPlaneCenter('pa-up', clientX, clientY);
+                        } else {
+                            riseUpPlaneCenter('pa-down', clientX, clientY);
+                        }
+                    }
+                }
+            }
+        }
+
+        let tapStartX = 0, tapStartY = 0, tapStartTime = 0;
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('#top-left-bar') || e.target.closest('#modal-wrapper')) return;
+            tapStartX = e.clientX;
+            tapStartY = e.clientY;
+            tapStartTime = Date.now();
+        }, { passive: true });
+
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            if (e.target.closest('#top-left-bar') || e.target.closest('#modal-wrapper')) return;
+            const dist = Math.hypot(e.clientX - tapStartX, e.clientY - tapStartY);
+            if (dist < 26 && (Date.now() - tapStartTime) < 500) {
+                handlePointerTap(e.clientX, e.clientY);
+            }
+        }, { passive: true });
+
+        /* ========================================================
+           11. 渲染主循环与视口自适应
+           ======================================================== */
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+            advanceAutoMotion();
+            update2DCanvas();
+        }
+        animate();
+
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (isPlaneActive) {
+                if (isGraphFullscreen) {
+                    p2dCanvasBox.style.width = window.innerWidth + 'px';
+                    p2dCanvasBox.style.height = (window.innerHeight - 52) + 'px';
+                }
+                resizeCanvases();
+            }
+        };
+    </script>
+</body>
+</html>
