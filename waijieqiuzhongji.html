@@ -267,7 +267,7 @@
             border-color: #2b1f13;
         }
 
-        /* ⭐ 右侧推导面板：优化收窄尺寸，不遮挡左侧三维模型 */
+        /* 右侧推导面板：紧凑排版，避免遮挡三维模型 */
         #side-panel {
             position: absolute;
             top: 0;
@@ -694,7 +694,9 @@
                 derivation: `
                     <h4>【原理】表面面对角线嵌入法</h4>
                     1. 四面体三组对棱分别对应长方体表面的面对角线：<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;• $a^2 + b^2 = x^2,\\quad b^2 + c^2 = y^2,\\quad c^2 + a^2 = z^2$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 红色对棱长：$x = \\sqrt{a^2 + b^2}$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 蓝色对棱长：$y = \\sqrt{b^2 + c^2}$<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• 绿色对棱长：$z = \\sqrt{c^2 + a^2}$<br>
                     2. 三式相加：$2(a^2 + b^2 + c^2) = x^2 + y^2 + z^2$。<br>
                     3. 代入长方体外接球公式得：
                     <div class="formula-highlight">
@@ -825,10 +827,10 @@
             const w = 85, h = 70, d = 50;
             const p1 = {x: cx - w - d/2, y: cy - h + d/2}, p2 = {x: cx + w - d/2, y: cy - h + d/2}, p3 = {x: cx + w - d/2, y: cy + h + d/2}, p4 = {x: cx - w - d/2, y: cy + h + d/2};
             const p7 = {x: p3.x + d, y: p3.y - d}, p8 = {x: p4.x + d, y: p4.y - d};
-            drawLine(ctx, p1.x, p1.y, p7.x, p7.y, false, "#b45309", 4); drawLine(ctx, p2.x, p2.y, p8.x, p8.y, false, "#b45309", 4);
-            drawLine(ctx, p1.x, p1.y, p2.x, p2.y, false, "#b45309", 4); drawLine(ctx, p7.x, p7.y, p8.x, p8.y, false, "#b45309", 4);
-            drawLine(ctx, p1.x, p1.y, p8.x, p8.y, true, "#b45309", 4); drawLine(ctx, p2.x, p2.y, p7.x, p7.y, false, "#b45309", 4);
-            drawText(ctx, "x", cx, cy - 75, "#9a3412"); drawText(ctx, "y", cx + 65, cy + 30, "#9a3412"); drawText(ctx, "z", cx - 75, cy + 30, "#9a3412");
+            drawLine(ctx, p1.x, p1.y, p7.x, p7.y, false, "#dc2626", 4); drawLine(ctx, p2.x, p2.y, p8.x, p8.y, false, "#dc2626", 4);
+            drawLine(ctx, p1.x, p1.y, p2.x, p2.y, false, "#059669", 4); drawLine(ctx, p7.x, p7.y, p8.x, p8.y, false, "#059669", 4);
+            drawLine(ctx, p1.x, p1.y, p8.x, p8.y, true, "#0284c7", 4); drawLine(ctx, p2.x, p2.y, p7.x, p7.y, false, "#0284c7", 4);
+            drawText(ctx, "x", cx, cy - 75, "#dc2626"); drawText(ctx, "y", cx + 65, cy + 30, "#0284c7"); drawText(ctx, "z", cx - 75, cy + 30, "#059669");
         }
 
         function drawHypotenuseDiagram(ctx, cx, cy) {
@@ -1073,7 +1075,7 @@
         }
 
         /* ========================================================
-           5. 3D 几何实体构造
+           5. 3D 几何实体构造 (高清晰白色描边标号支持)
            ======================================================== */
         function createThickLine(p1, p2, radius = 0.032, color = 0x1e293b) {
             const dir = new THREE.Vector3().subVectors(p2, p1);
@@ -1086,14 +1088,20 @@
             return mesh;
         }
 
+        /* ⭐ 优化文字精灵：增加清晰描边，确保在任何 3D 角度都清晰可辨 */
         function createTextSprite(text, color = '#1e293b') {
             const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.font = "bold 76px 'KaiTi', serif"; ctx.fillStyle = color;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 64, 64);
+            ctx.font = "bold 80px 'KaiTi', 'STKaiti', serif";
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+            ctx.strokeText(text, 64, 64);
+            ctx.fillStyle = color;
+            ctx.fillText(text, 64, 64);
             const tex = new THREE.CanvasTexture(canvas);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
-            sprite.scale.set(0.46, 0.46, 1);
+            sprite.scale.set(0.48, 0.48, 1);
             return sprite;
         }
 
@@ -1251,6 +1259,7 @@
             return g;
         }
 
+        /* ⭐ 核心升级：对棱相等模型 (模型三) 空间立体中明确标出 x, y, z 对棱标号 */
         function build3DEqualEdge() {
             const g = new THREE.Group(); const a = 1.8, b = 1.5, c = 2.0;
             g.add(createSphereShell(Math.sqrt(a*a+b*b+c*c)/2));
@@ -1260,12 +1269,35 @@
             g.add(cuboidGroup);
             g.userData.cuboid = cuboidGroup;
 
-            const V1 = vertices[0], V2 = vertices[2], V3 = vertices[5], V4 = vertices[7];
-            const tet = [V1, V2,  V1, V3,  V1, V4,  V2, V3,  V3, V4,  V4, V2];
-            for (let i = 0; i < tet.length; i += 2) g.add(createThickLine(tet[i], tet[i+1], 0.042, 0xd97706));
+            const V1 = vertices[0]; // (-a/2, -b/2, -c/2)
+            const V2 = vertices[2]; // ( a/2,  b/2, -c/2)
+            const V3 = vertices[5]; // ( a/2, -b/2,  c/2)
+            const V4 = vertices[7]; // (-a/2,  b/2,  c/2)
+
+            // 1. 对棱组 x (长 √(a²+b²))：(V1, V2) 与 (V3, V4)，赋高饱和红色
+            g.add(createThickLine(V1, V2, 0.044, 0xdc2626));
+            g.add(createThickLine(V3, V4, 0.044, 0xdc2626));
+
+            // 2. 对棱组 y (长 √(b²+c²))：(V1, V4) 与 (V2, V3)，赋高饱和蓝色
+            g.add(createThickLine(V1, V4, 0.044, 0x0284c7));
+            g.add(createThickLine(V2, V3, 0.044, 0x0284c7));
+
+            // 3. 对棱组 z (长 √(a²+c²))：(V2, V4) 与 (V1, V3)，赋高饱和绿色
+            g.add(createThickLine(V2, V4, 0.044, 0x059669));
+            g.add(createThickLine(V1, V3, 0.044, 0x059669));
+
             addVertices(g, [V1, V2, V3, V4], 0xd97706);
 
-            const sX = createTextSprite("x", "#b45309"); sX.position.set(0, b/2 + 0.2, 0); g.add(sX);
+            // ⭐ 标号标注：在每条对棱中点准确悬浮标记 x, y, z
+            const sx1 = createTextSprite("x", "#dc2626"); sx1.position.set(0, 0, -c/2 - 0.28); g.add(sx1);
+            const sx2 = createTextSprite("x", "#dc2626"); sx2.position.set(0, 0,  c/2 + 0.28); g.add(sx2);
+
+            const sy1 = createTextSprite("y", "#0284c7"); sy1.position.set(-a/2 - 0.28, 0, 0); g.add(sy1);
+            const sy2 = createTextSprite("y", "#0284c7"); sy2.position.set( a/2 + 0.28, 0, 0); g.add(sy2);
+
+            const sz1 = createTextSprite("z", "#059669"); sz1.position.set(0,  b/2 + 0.28, 0); g.add(sz1);
+            const sz2 = createTextSprite("z", "#059669"); sz2.position.set(0, -b/2 - 0.28, 0); g.add(sz2);
+
             return g;
         }
 
@@ -1694,7 +1726,6 @@
             });
         };
 
-        /* ⭐ 核心调整：立体模型拔出时，坐标整体往左侧移动 (x: -1.9)，相机焦点同步左移居中 */
         function sproutModel(idx) {
             isAnimating = true;
             const target = active3DModels[idx];
@@ -1720,10 +1751,8 @@
                 duration: 0.95, ease: "elastic.out(1.15, 0.45)"
             }, "-=0.55");
 
-            // ⭐ 关键点：模型向左平移至 x = -1.9，远离右侧面板
             tl.to(target.position, { x: -1.9, y: 0.35, z: 1.2, duration: 0.85, ease: "power2.out" }, "<");
 
-            // ⭐ 视角中心同步平滑过渡到立体模型处，旋转时以模型为中心，绝不挡住
             gsap.to(controls.target, {
                 x: -1.8,
                 y: 0.35,
@@ -1779,7 +1808,7 @@
             btnToggleBox.style.display = 'none';
             clearScreenDrawing();
 
-            controls.resetPan(); // ⭐ 视线平滑回正到屏幕正中
+            controls.resetPan();
 
             gsap.to(bookGroup.position, { y: BOOK_NORMAL_Y, duration: 0.85, ease: "power2.inOut" });
 
